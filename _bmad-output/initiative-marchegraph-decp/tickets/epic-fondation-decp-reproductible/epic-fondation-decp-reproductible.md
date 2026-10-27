@@ -91,3 +91,10 @@ comptes d'attributions initiales et de modifications sans les confondre.
 - Decision: 2026-10-27 — Laisser aux stories le schéma exact du manifeste,
   l'organisation des fichiers préparés et le découpage des tests ; le contrat
   de sortie est Parquet préparé, manifeste et rapport de qualité.
+- Decision: 2026-10-27 — Le tracer bullet est la story 1, « Construire et
+  exécuter le pipeline DECP », qui établit la commande locale reproductible et
+  le contrat de sortie (`data/prepared/decp.parquet`,
+  `data/prepared/manifest.json`, `data/prepared/quality-report.md`) ; la story
+  2 complète le rapport de qualité après ce pipeline. Les sorties restent
+  locales et non suivies par Git ; le détail des schémas reste à fixer dans
+  les tickets détaillés.

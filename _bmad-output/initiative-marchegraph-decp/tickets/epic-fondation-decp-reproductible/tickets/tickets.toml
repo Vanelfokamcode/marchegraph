@@ -1,0 +1,24 @@
+[[entry]]
+id = 1
+type = "story"
+title = "Construire et exécuter le pipeline DECP"
+description = "Remplace le profilage ponctuel par un socle local reproductible (Python 3.12.3 et DuckDB 2.0.0 déclarés et verrouillés dans le projet), une commande documentée de préparation DuckDB et une vérification intégrée. La personne qui réalise la story exécute cette commande sur le snapshot identifié et constate les trois sorties locales : data/prepared/decp.parquet, data/prepared/manifest.json et data/prepared/quality-report.md. Le jeu couvre 2025 toutes régions selon la région de l'acheteur et la comparaison 2024 ; il permet d'analyser séparément les attributions initiales (modification_id = 0, uid distincts) et les lignes de modification."
+verify = "Exécuter la commande intégrée sur le snapshot identifié : le Parquet préparé, le manifeste JSON et le rapport Markdown sont créés localement et ne sont pas suivis par Git ; le manifeste indique le SHA-256 b39257f135aada4637797239489dce63365c9e9ac793688af45d9d06eed7b6f0, la taille 250253419 octets et une date d'extraction inconnue ; une vérification du Parquet préparé confirme pour 2025 les 315 998 lignes d'attribution initiale et 273 425 uid distincts, séparément des 271 210 lignes de modification et de leurs 104 722 uid distincts ; les résultats 2024 sont aussi produits et les tests passent."
+covers = ["R1", "R2"]
+after = []
+hitl = true
+risk = "high"
+notes = ["Contrôle supplémentaire du risque : comparer indépendamment les quatre comptes 2025 au snapshot local par une requête DuckDB directe."]
+references = ["docs/profilage-initial.md"]
+
+[[entry]]
+id = 2
+type = "story"
+title = "Compléter le rapport de qualité DECP"
+description = "Complète le rapport de qualité des attributions initiales 2024 et 2025 avec les taux de valeurs manquantes de acheteur_id, titulaire_id, montant, codeCPV, objet, lieuExecution_code, acheteur_region_code et offresRecues ; les anomalies montant_anomalie ; et les distributions de délai entre notification et publication, dont le nombre et le taux des délais négatifs. Ces constats restent descriptifs : ils ne retirent aucune ligne du jeu préparé."
+verify = "Exécuter la vérification intégrée du rapport : elle contrôle les taux des huit champs pour les deux années, dont titulaire_id (11,81 % en 2024 et 1,56 % en 2025), les anomalies de montant (6 811 suspect et 1 184 aberrant en 2025) et les délais négatifs (12 244, soit 3,76 % en 2024 ; 13 395, soit 4,24 % en 2025, parmi les lignes avec date de publication) ; les lignes signalées restent dans le Parquet préparé et les tests passent."
+covers = ["R1"]
+after = [1]
+hitl = false
+risk = "medium"
+references = ["docs/profilage-initial.md"]
