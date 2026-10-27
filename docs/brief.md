@@ -26,7 +26,7 @@ Construire un graphe de connaissances de la commande publique, fondé sur une on
 - Étude de cas : 2024 contre 2025, pour mesurer la montée en charge de la publication.
 - Licence et données personnelles (entrepreneurs individuels) : à vérifier avant toute publication.
 
-## Périmètre (dans le projet)
+## Périmètre 
 - Profilage et nettoyage des DECP (DuckDB).
 - Résolution d'entités sur les fournisseurs.
 - Ontologie (OWL, SKOS pour les codes CPV) et contraintes SHACL.
