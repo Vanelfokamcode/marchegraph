@@ -110,10 +110,14 @@ GraphRAG qui cite son chemin dans le graphe ou indique qu'il ne sait pas.
 
 ## Boundaries
 
-- Touch point: DECP Parquet, profilage et transformation — owner: epic à définir
-  au découpage.
-- Touch point: graphe de connaissances, requêtes et assistant GraphRAG — owner:
-  epic à définir au découpage.
+- Touch point: DECP Parquet, profilage et jeu analytique transformé — owner:
+  epic 1, Fondation DECP reproductible.
+- Touch point: rapprochement des titulaires et mesures de qualité — owner: epic
+  2, Résolution des identités titulaires.
+- Touch point: ontologie, validation, graphe et requêtes de référence — owner:
+  epic 3, Graphe de connaissance vérifiable.
+- Touch point: assistant GraphRAG local et évaluation comparative — owner: epic
+  4, Assistant GraphRAG local évalué.
 - Tracer path: snapshot DECP → profilage et transformations documentés → graphe
   interrogeable → réponse en français avec preuve ou abstention.
 - Must not change: le projet ne prétend pas décrire les paiements ou
@@ -157,3 +161,20 @@ GraphRAG qui cite son chemin dans le graphe ou indique qu'il ne sait pas.
   locaux.
 - Open question: Quelles règles de protection et d'agrégation s'appliquent
   avant toute publication de données potentiellement personnelles ?
+- Source conflict: 2026-10-27 — La règle générique de slicing demande une
+  livraison en production pour chaque epic, tandis que C7 exclut la mise en
+  production. Proposition à confirmer : chaque epic livre un résultat local
+  intégré et vérifiable, sans déploiement en production.
+- Decision: 2026-10-27 — Découper l'initiative en quatre epics dans l'ordre
+  indiqué par `tickets/tickets.toml` : préparation DECP, résolution des
+  titulaires, graphe vérifiable, puis assistant GraphRAG évalué. Le premier
+  résultat démontrable est local et porte sur la reconstruction des données ;
+  la résolution des titulaires est priorisée comme partie techniquement la
+  moins certaine. La couverture R1–R7 est répartie sans chevauchement.
+- Decision: 2026-10-27 — Pour cette initiative locale, un résultat intégré et
+  vérifiable localement remplace la livraison en production exigée par la
+  règle générique BMAD ; aucun déploiement en production n'est prévu.
+- Decision: 2026-10-27 — L'utilisateur demande `bmad-architecture` après
+  l'approbation du découpage pour les choix techniques partagés ; les choix
+  d'ontologie restent sous son autorité. Aucune règle personnalisée
+  `slice_to_epics` n'est ajoutée.
