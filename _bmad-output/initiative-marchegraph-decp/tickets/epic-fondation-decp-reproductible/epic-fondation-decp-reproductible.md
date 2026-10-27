@@ -10,6 +10,7 @@ companions: ["_bmad-output/initiative-marchegraph-decp/architecture-marchegraph-
 after: []
 refined: true
 risk: medium
+status: in-progress
 ---
 
 # Fondation DECP reproductible
