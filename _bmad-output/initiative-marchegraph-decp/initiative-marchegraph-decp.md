@@ -136,8 +136,9 @@ GraphRAG qui cite son chemin dans le graphe ou indique qu'il ne sait pas.
 - Decision: 2026-10-27 — Les attributions initiales sont comptées par `uid`
   distinct et les modifications restent analysables séparément.
 - Decision: 2026-10-27 — GraphRAG fait partie de cette initiative.
-- Open question: Le seuil proposé de huit réponses correctes sur dix est-il un
-  critère de réussite obligatoire ?
+- Decision: 2026-10-27 — Mesurer d'abord une baseline sur les dix questions,
+  puis fixer un seuil de réussite ; la proposition de huit sur dix n'est pas
+  un critère immédiat.
 - Open question: Neo4j comme base principale et l'export RDF limité restent des
   propositions d'architecture à valider.
 - Open question: Comment représenter les versions de modification et les
