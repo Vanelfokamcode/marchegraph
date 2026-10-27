@@ -36,10 +36,11 @@ pour 2025 et 2024.
   produisent la même identité, que des types ou valeurs différents ne sont pas
   fusionnés et que les zéros initiaux sont conservés.
 - R2 (parent R5) : La qualité de cette règle est mesurée sur un échantillon
-  vérifié manuellement. Le rapport indique la taille et la composition de
-  l'échantillon, les résultats corrects et incorrects, les métriques et leurs
-  dénominateurs, ainsi que les limites de l'évaluation ; aucun seuil de réussite
-  n'est fixé avant la mesure de la baseline.
+  vérifié manuellement par une personne autre que le propriétaire du projet.
+  Le rapport estime la précision des groupes rapprochés, en indique la taille
+  et la composition, les résultats corrects et incorrects, le dénominateur et
+  les limites ; il ne prétend pas mesurer le rappel ni les rapprochements
+  manqués et ne fixe pas de seuil de réussite avant la mesure de la baseline.
 - R3 (parent R5) : Le rapport rend visibles, par année et type d'identifiant,
   les lignes rapprochées et non rapprochées, et distingue explicitement les
   identifiants manquants afin que la différence de complétude entre 2024 et
@@ -51,8 +52,10 @@ pour 2025 et 2024.
   les lignes par couple type-valeur normalisé sans modifier le Parquet préparé.
 - Les lignes sans type ou valeur d'identifiant restent non rapprochées et sont
   rapportées séparément ; aucune fusion automatique ne se fait par le nom seul.
-- Un échantillon est vérifié manuellement ; le rapport publie les effectifs,
-  métriques, dénominateurs et limites de l'évaluation sans seuil préétabli.
+- Un échantillon de groupes rapprochés est vérifié par une personne distincte
+  du propriétaire du projet ; le rapport publie la précision observée, ses
+  effectifs, son dénominateur et ses limites, sans seuil préétabli ni
+  revendication de rappel.
 - Le rapport distingue 2025, périmètre principal, de 2024, comparaison
   secondaire, et expose l'écart de complétude des identifiants.
 - Les tests vérifient la normalisation, la préservation des zéros initiaux,
@@ -102,12 +105,18 @@ pour 2025 et 2024.
   et en le passant en majuscules ; ne retirer que les espaces externes de la
   valeur et préserver sa casse, sa ponctuation, ses espaces internes et ses
   zéros initiaux.
-- Open question: Le plan de constitution de l'échantillon et le choix précis
-  des métriques, ainsi que la personne qui réalisera la vérification manuelle,
-  seront précisés au découpage en stories ; le seuil de réussite restera ouvert
-  jusqu'à la mesure de la baseline.
+- Open question: Le plan et la taille de l'échantillon, ainsi que l'identité
+  de la personne chargée de la vérification manuelle, seront fixés au
+  découpage en stories ; le seuil de réussite restera ouvert jusqu'à la mesure
+  de la baseline.
 - Decision: 2026-10-27 — La story qui demande l'adjudication manuelle de
   l'échantillon sera marquée `hitl = true` lors du découpage.
+- Decision: 2026-10-27 — Évaluer la précision des groupes rapprochés ; décrire
+  les non-résolus et variantes de noms sans revendiquer une mesure du rappel ni
+  des rapprochements manqués.
+- Decision: 2026-10-27 — La vérification manuelle est réalisée par une
+  personne autre que le propriétaire du projet ; son identité est fixée avant
+  que la story HITL commence.
 - Risk rationale: une fusion erronée ou une identité scindée biaiserait les
   comptes de titulaires et les analyses de réseau en aval ; la règle
   conservatrice et l'échantillon vérifié limitent ce risque.
