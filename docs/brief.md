@@ -30,7 +30,7 @@ Construire un graphe de connaissances de la commande publique, fondé sur une on
 - Profilage et nettoyage des DECP (DuckDB).
 - Résolution d'entités sur les fournisseurs.
 - Ontologie (OWL, SKOS pour les codes CPV) et contraintes SHACL.
-- Graphe Neo4j, avec un export RDF d'un sous-ensemble.
+- Graphe Neo4j, avec un export RDF d'un sous-ensemble
 - Assistant GraphRAG et évaluation.
 
 ## Hors périmètre
