@@ -1,0 +1,28 @@
+@prefix mg:   <https://example.org/marchegraph/> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+
+# OWL : les types de choses
+mg:Acheteur a owl:Class ; rdfs:label "Acheteur"@fr .
+mg:Hopital  a owl:Class ; rdfs:subClassOf mg:Acheteur ; rdfs:label "Hôpital"@fr .
+mg:Titulaire a owl:Class ; rdfs:label "Titulaire"@fr .
+mg:Marche   a owl:Class ; rdfs:label "Marché"@fr .
+
+# OWL : les relations et les attributs
+mg:acheteur     a owl:ObjectProperty   ; rdfs:domain mg:Marche ; rdfs:range mg:Acheteur .
+mg:titulaire    a owl:ObjectProperty   ; rdfs:domain mg:Marche ; rdfs:range mg:Titulaire .
+mg:categorieCPV a owl:ObjectProperty   ; rdfs:domain mg:Marche ; rdfs:range skos:Concept .
+mg:montantHT    a owl:DatatypeProperty ; rdfs:domain mg:Marche ; rdfs:range xsd:decimal .
+mg:objet        a owl:DatatypeProperty ; rdfs:domain mg:Marche ; rdfs:range rdfs:Literal .
+mg:siret        a owl:DatatypeProperty ; rdfs:domain mg:Titulaire ; rdfs:range xsd:string .
+
+# SKOS : les codes CPV et leur hiérarchie (extrait)
+mg:CPV a skos:ConceptScheme ; skos:prefLabel "Codes CPV (extrait)"@fr .
+mg:cpv-45200000 a skos:Concept ; skos:inScheme mg:CPV ; skos:notation "45200000" ;
+    skos:prefLabel "Travaux de génie civil"@fr .
+mg:cpv-45233000 a skos:Concept ; skos:inScheme mg:CPV ; skos:notation "45233000" ;
+    skos:prefLabel "Travaux de chaussées"@fr ; skos:broader mg:cpv-45200000 .
+mg:cpv-45233140 a skos:Concept ; skos:inScheme mg:CPV ; skos:notation "45233140" ;
+    skos:prefLabel "Travaux routiers"@fr ; skos:broader mg:cpv-45233000 .
