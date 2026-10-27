@@ -17,6 +17,9 @@ uv run --locked python -m unittest discover -s tests
 uv run --locked python src/marchegraph/data/prepare.py \
   --input data/decp.parquet \
   --output-dir data/prepared
+uv run --locked python src/marchegraph/entity_resolution/prepare.py \
+  --input data/prepared/decp.parquet \
+  --output-dir data/prepared
 ```
 
 Le manifeste JSON indique le chemin source, son SHA-256, sa taille en octets,
@@ -27,6 +30,12 @@ Il présente aussi, pour les attributions initiales de chaque année, les
 comptes et taux de valeurs manquantes, les catégories de `montant_anomalie`,
 les dates de publication manquantes et les quantiles des délais calculables.
 Les anomalies sont signalées sans exclure de lignes.
+
+La commande de résolution consomme ce Parquet préparé et écrit localement
+`holder-identities.parquet` et `holder-resolution-report.md` dans le même
+dossier. Elle regroupe les lignes d'attribution initiale par type et valeur
+d'identifiant normalisés, conserve les identifiants manquants dans des
+catégories non résolues, et ne rapproche pas les titulaires sur leur nom.
 
 Le pipeline refuse un snapshot différent de celui profilé tant que ses
 baselines n'ont pas été réévaluées. Une erreur de lecture, un snapshot
