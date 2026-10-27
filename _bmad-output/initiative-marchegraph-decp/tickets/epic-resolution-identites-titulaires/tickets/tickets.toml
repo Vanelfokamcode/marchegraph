@@ -1,0 +1,22 @@
+[[entry]]
+id = 1
+type = "story"
+title = "Construire le rapprochement par identifiant typé"
+description = "Produit localement une identité canonique reproductible par couple type-valeur d'identifiant et rend visibles les comptes rapprochés et non résolus."
+verify = "La commande locale rejouée sur le Parquet préparé conserve les zéros initiaux, sépare les types différents et rapporte, par année et type, les lignes rapprochées, non rapprochées et celles dont le type ou la valeur manque, sans modifier la source."
+covers = ["R1", "R3"]
+after = ["epic-fondation-decp-reproductible"]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Mesurer la précision des identités rapprochées"
+description = "Un échantillon de groupes rapprochés est vérifié manuellement et ses résultats de précision, limites et cas non résolus sont rapportés localement."
+verify = "La commande locale documentée génère le rapport depuis les données et labels locaux ; un test sur un jeu synthétique vérifie les effectifs examinés, confirmés, incorrects et indécis par année/type, le numérateur et dénominateur de précision, les non-résolus et variantes de noms, sans revendiquer le rappel ni fusionner par nom."
+covers = ["R2", "R3"]
+after = [1, "epic-fondation-decp-reproductible"]
+hitl = true
+risk = "high"
+unknown = "Quelle personne externe vérifiera l'échantillon et quelle taille d'échantillon peut-elle examiner ?"

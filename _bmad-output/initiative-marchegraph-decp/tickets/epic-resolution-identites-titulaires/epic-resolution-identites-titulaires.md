@@ -117,6 +117,14 @@ pour 2025 et 2024.
 - Decision: 2026-10-27 — La vérification manuelle est réalisée par une
   personne autre que le propriétaire du projet ; son identité est fixée avant
   que la story HITL commence.
+- Decision: 2026-10-27 — La story 2.1 est le tracer bullet : elle traverse le
+  contrat préparé, la clé d'identité typée et le résultat local vérifiable ;
+  la story 2.2 suit pour traiter le risque le moins certain, la mesure manuelle
+  de précision.
+- Decision: 2026-10-27 — L'utilisateur approuve deux stories : résolution
+  déterministe en 2.1, puis évaluation manuelle de précision en 2.2. La story
+  HITL reste bloquée jusqu'à confirmation du relecteur externe et de la taille
+  d'échantillon.
 - Risk rationale: une fusion erronée ou une identité scindée biaiserait les
   comptes de titulaires et les analyses de réseau en aval ; la règle
   conservatrice et l'échantillon vérifié limitent ce risque.
