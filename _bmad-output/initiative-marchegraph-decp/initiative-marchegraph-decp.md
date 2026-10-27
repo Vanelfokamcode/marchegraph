@@ -81,10 +81,11 @@ GraphRAG qui cite son chemin dans le graphe ou indique qu'il ne sait pas.
   l'ontologie sont décidés par l'utilisateur et documentés pour qu'il puisse
   les défendre.
 - C7 (brief — Risques; Hors périmètre) : Les analyses restent neutres et
-  agrégées ; les risques de données personnelles doivent être examinés avant
-  publication. La fiche de la source indique la Licence Ouverte 2.0. La mise
-  en production, une interface soignée et la gestion d'utilisateurs sont
-  exclues.
+  agrégées ; la démonstration reste locale et aucune donnée DECP ligne à ligne
+  ni aucun résultat dérivé n'est publié. La fiche de la source indique la
+  Licence Ouverte 2.0, qui ne règle pas à elle seule les données personnelles.
+  La mise en production, une interface soignée et la gestion d'utilisateurs
+  sont exclues.
 - C8 (brief — Périmètre) : Le brief propose OWL pour l'ontologie, SKOS pour CPV
   et SHACL pour la validation ; ces formats restent soumis aux décisions de
   modélisation de l'utilisateur.
@@ -118,6 +119,8 @@ GraphRAG qui cite son chemin dans le graphe ou indique qu'il ne sait pas.
 - Must not change: le projet ne prétend pas décrire les paiements ou
   l'exécution financière des marchés.
 - Must not change: aucune accusation ni aucun jugement sur des acteurs nommés.
+- Must not change: la démonstration et les sorties dérivées des données restent
+  locales.
 
 ## References
 
@@ -147,5 +150,10 @@ GraphRAG qui cite son chemin dans le graphe ou indique qu'il ne sait pas.
   `b39257f135aada4637797239489dce63365c9e9ac793688af45d9d06eed7b6f0` et sa
   taille de 250 253 419 octets ; cette empreinte ne donne pas sa date
   d'extraction.
+- Decision: 2026-10-27 — Garder la démonstration locale et ne publier ni les
+  lignes DECP ni les résultats dérivés.
+- Open question: Le code source, la documentation technique ou une présentation
+  de portfolio peuvent-ils être publics alors que la démonstration et les
+  sorties des données restent locales ?
 - Open question: Quelles règles de protection et d'agrégation s'appliquent
   avant toute publication de données potentiellement personnelles ?
