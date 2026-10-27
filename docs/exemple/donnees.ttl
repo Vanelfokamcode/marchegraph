@@ -1,0 +1,14 @@
+@prefix mg:   <https://example.org/marchegraph/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+mg:ville-exemple a mg:Acheteur ; rdfs:label "Ville d'Exemple" .
+
+mg:durand-sarl a mg:Titulaire ; rdfs:label "Durand Travaux SARL" ; mg:siret "00000000000000" .
+
+mg:marche-2025-001 a mg:Marche ;
+    mg:objet "Réfection de la voirie du centre-ville"@fr ;
+    mg:montantHT "250000.00"^^xsd:decimal ;
+    mg:acheteur mg:ville-exemple ;
+    mg:titulaire mg:durand-sarl ;
+    mg:categorieCPV mg:cpv-45233140 .

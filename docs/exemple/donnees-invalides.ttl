@@ -1,0 +1,7 @@
+@prefix mg:  <https://example.org/marchegraph/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+mg:durand-sarl a mg:Titulaire .
+mg:marche-2025-002 a mg:Marche ;
+    mg:montantHT "-10.00"^^xsd:decimal ;
+    mg:titulaire mg:durand-sarl .

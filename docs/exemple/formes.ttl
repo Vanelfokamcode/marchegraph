@@ -1,0 +1,19 @@
+@prefix mg:  <https://example.org/marchegraph/> .
+@prefix sh:  <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+mg:MarcheShape a sh:NodeShape ;
+    sh:targetClass mg:Marche ;
+    sh:property [ sh:path mg:acheteur ; sh:minCount 1 ; sh:maxCount 1 ; sh:class mg:Acheteur ;
+        sh:message "Un marché doit avoir exactement un acheteur."@fr ] ;
+    sh:property [ sh:path mg:titulaire ; sh:minCount 1 ; sh:class mg:Titulaire ;
+        sh:message "Un marché doit avoir au moins un titulaire."@fr ] ;
+    sh:property [ sh:path mg:montantHT ; sh:minCount 1 ; sh:datatype xsd:decimal ; sh:minExclusive 0 ;
+        sh:message "Le montant HT doit être un nombre strictement positif."@fr ] ;
+    sh:property [ sh:path mg:categorieCPV ; sh:minCount 1 ;
+        sh:message "Un marché doit avoir un code CPV."@fr ] .
+
+mg:TitulaireShape a sh:NodeShape ;
+    sh:targetClass mg:Titulaire ;
+    sh:property [ sh:path mg:siret ; sh:pattern "^[0-9]{14}$" ;
+        sh:message "Un SIRET contient exactement 14 chiffres."@fr ] .
