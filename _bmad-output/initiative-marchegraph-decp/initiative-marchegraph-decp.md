@@ -5,7 +5,7 @@ parent: none
 sources:
   - docs/brief.md
   - docs/profilage-initial.md
-companions: []
+companions: ["_bmad-output/initiative-marchegraph-decp/architecture-marchegraph-decp/architecture-marchegraph-decp.md"]
 after: []
 risk: medium
 ---
@@ -89,6 +89,9 @@ GraphRAG qui cite son chemin dans le graphe ou indique qu'il ne sait pas.
 - C8 (brief — Périmètre) : Le brief propose OWL pour l'ontologie, SKOS pour CPV
   et SHACL pour la validation ; ces formats restent soumis aux décisions de
   modélisation de l'utilisateur.
+- C9 (décision utilisateur — architecture) : Aucun service LLM distant n'est
+  appelé et aucun contexte dérivé des DECP n'est envoyé à un service externe.
+  Un modèle local n'est retenu qu'après un test de capacité.
 
 ## Done when
 
@@ -146,8 +149,6 @@ GraphRAG qui cite son chemin dans le graphe ou indique qu'il ne sait pas.
 - Decision: 2026-10-27 — Mesurer d'abord une baseline sur les dix questions,
   puis fixer un seuil de réussite ; la proposition de huit sur dix n'est pas
   un critère immédiat.
-- Open question: Neo4j comme base principale et l'export RDF limité restent des
-  propositions d'architecture à valider.
 - Open question: Comment représenter les versions de modification et les
   marchés avec plusieurs titulaires sans fixer ici la modélisation ?
 - Decision: 2026-10-27 — Identifier le Parquet local par le SHA-256
@@ -163,8 +164,8 @@ GraphRAG qui cite son chemin dans le graphe ou indique qu'il ne sait pas.
   avant toute publication de données potentiellement personnelles ?
 - Source conflict: 2026-10-27 — La règle générique de slicing demande une
   livraison en production pour chaque epic, tandis que C7 exclut la mise en
-  production. Proposition à confirmer : chaque epic livre un résultat local
-  intégré et vérifiable, sans déploiement en production.
+  production. Résolu par la décision ci-dessous : chaque epic livre un résultat
+  local intégré et vérifiable, sans déploiement en production.
 - Decision: 2026-10-27 — Découper l'initiative en quatre epics dans l'ordre
   indiqué par `tickets/tickets.toml` : préparation DECP, résolution des
   titulaires, graphe vérifiable, puis assistant GraphRAG évalué. Le premier
@@ -174,7 +175,22 @@ GraphRAG qui cite son chemin dans le graphe ou indique qu'il ne sait pas.
 - Decision: 2026-10-27 — Pour cette initiative locale, un résultat intégré et
   vérifiable localement remplace la livraison en production exigée par la
   règle générique BMAD ; aucun déploiement en production n'est prévu.
+- Decision: 2026-10-27 — Aucun epic de plateforme/deploiement autonome n'est
+  nécessaire pour la démo locale ; l'epic 1 porte le socle minimal du pipeline
+  reproductible et de l'environnement local qui le fait fonctionner.
 - Decision: 2026-10-27 — L'utilisateur demande `bmad-architecture` après
   l'approbation du découpage pour les choix techniques partagés ; les choix
   d'ontologie restent sous son autorité. Aucune règle personnalisée
   `slice_to_epics` n'est ajoutée.
+- Decision: 2026-10-27 — Après avoir envisagé une démonstration publique et une
+  fiche de réutilisation data.gouv.fr, l'utilisateur confirme que le projet
+  reste entièrement local pour l'apprentissage ; aucune ligne DECP ni aucun
+  résultat dérivé ne sera publié. La visibilité du code et de la documentation
+  reste différée à la fin du projet.
+- Decision: 2026-10-27 — Neo4j est le graphe opérationnel principal ; RDF est
+  un export généré depuis Neo4j, pas une source de vérité modifiée séparément.
+- Decision: 2026-10-27 — Aucun service LLM distant n'est appelé ; un modèle
+  local ne peut être retenu qu'après un spike de capacité.
+- Open question: Si le spike ne trouve pas de modèle local suffisant pour R4 et
+  R6, revoir le critère avec l'utilisateur au lieu de basculer vers un service
+  distant ou d'écarter silencieusement ces exigences.

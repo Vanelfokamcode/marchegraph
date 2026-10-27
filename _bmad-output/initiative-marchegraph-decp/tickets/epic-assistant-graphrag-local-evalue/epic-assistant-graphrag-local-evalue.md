@@ -48,10 +48,13 @@ hallucinations et les coûts.
   l'epic 3.
 - Must not change: le système ne répond pas au-delà des preuves disponibles.
 - Must not change: la démonstration et les sorties dérivées restent locales.
+- Must not change: aucun service LLM distant n'est appelé ; un modèle local
+  n'est retenu qu'après un test de capacité.
 
 ## References
 
-- parent — `_bmad-output/initiative-marchegraph-decp/initiative-marchegraph-decp.md`, Requirements R4, R6; Constraints C3, C7.
+- parent — `_bmad-output/initiative-marchegraph-decp/initiative-marchegraph-decp.md`, Requirements R4, R6; Constraints C3, C7, C9.
+- architecture — `_bmad-output/initiative-marchegraph-decp/architecture-marchegraph-decp/architecture-marchegraph-decp.md`, AD-3–AD-5.
 
 ## Notes
 

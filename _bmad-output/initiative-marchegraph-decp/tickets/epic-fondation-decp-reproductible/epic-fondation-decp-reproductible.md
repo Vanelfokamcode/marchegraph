@@ -18,7 +18,8 @@ risk: medium
 
 Construire une préparation DECP locale, documentée et rejouable, fondée sur le
 snapshot identifié et le périmètre décidé. Elle fournit le jeu analytique 2025,
-la comparaison 2024, leur provenance et leur profil de qualité.
+la comparaison 2024, leur provenance, leur profil de qualité et le socle local
+minimal qui permet de rejouer le pipeline.
 
 ## Outcome
 
@@ -52,3 +53,4 @@ comptes d'attributions initiales et de modifications sans les confondre.
 ## References
 
 - parent — `_bmad-output/initiative-marchegraph-decp/initiative-marchegraph-decp.md`, Requirements R1–R2; Constraints C1, C3–C5, C7.
+- architecture — `_bmad-output/initiative-marchegraph-decp/architecture-marchegraph-decp/architecture-marchegraph-decp.md`, AD-1, AD-4–AD-5.

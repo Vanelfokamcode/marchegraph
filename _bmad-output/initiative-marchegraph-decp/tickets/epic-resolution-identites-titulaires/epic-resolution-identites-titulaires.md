@@ -54,6 +54,7 @@ entre 2024 et 2025.
 ## References
 
 - parent — `_bmad-output/initiative-marchegraph-decp/initiative-marchegraph-decp.md`, Requirements R5; Constraints C2, C3, C7.
+- architecture — `_bmad-output/initiative-marchegraph-decp/architecture-marchegraph-decp/architecture-marchegraph-decp.md`, AD-1, AD-4–AD-5.
 
 ## Notes
 

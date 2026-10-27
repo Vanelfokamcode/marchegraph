@@ -54,6 +54,7 @@ les réponses de référence sont répétables et explicables.
 ## References
 
 - parent — `_bmad-output/initiative-marchegraph-decp/initiative-marchegraph-decp.md`, Requirements R3, R7; Constraints C2, C6–C8.
+- architecture — `_bmad-output/initiative-marchegraph-decp/architecture-marchegraph-decp/architecture-marchegraph-decp.md`, AD-1–AD-3, AD-5.
 
 ## Notes
 
