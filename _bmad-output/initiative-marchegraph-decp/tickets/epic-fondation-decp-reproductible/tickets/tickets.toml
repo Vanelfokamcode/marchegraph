@@ -2,14 +2,15 @@
 id = 1
 type = "story"
 title = "Construire et exécuter le pipeline DECP"
-description = "Remplace le profilage ponctuel par un socle local reproductible (Python 3.12.3 et DuckDB 2.0.0 déclarés et verrouillés dans le projet), une commande documentée de préparation DuckDB et une vérification intégrée. La personne qui réalise la story exécute cette commande sur le snapshot identifié et constate les trois sorties locales : data/prepared/decp.parquet, data/prepared/manifest.json et data/prepared/quality-report.md. Le jeu couvre 2025 toutes régions selon la région de l'acheteur et la comparaison 2024 ; il permet d'analyser séparément les attributions initiales (modification_id = 0, uid distincts) et les lignes de modification."
-verify = "Exécuter la commande intégrée sur le snapshot identifié : le Parquet préparé, le manifeste JSON et le rapport Markdown sont créés localement et ne sont pas suivis par Git ; le manifeste indique le SHA-256 b39257f135aada4637797239489dce63365c9e9ac793688af45d9d06eed7b6f0, la taille 250253419 octets et une date d'extraction inconnue ; une vérification du Parquet préparé confirme pour 2025 les 315 998 lignes d'attribution initiale et 273 425 uid distincts, séparément des 271 210 lignes de modification et de leurs 104 722 uid distincts ; les résultats 2024 sont aussi produits et les tests passent."
+description = "Remplace le profilage ponctuel par un socle local reproductible avec Python 3.12.3 et DuckDB 2.0.0 déclarés et verrouillés, une commande DuckDB documentée et des tests intégrés. La personne exécute la commande sur le snapshot identifié et vérifie le Parquet préparé, le manifeste de provenance et le rapport initial. Le Parquet couvre les lignes notifiées en 2024 et 2025, conserve les colonnes d'origine et permet d'analyser séparément les attributions initiales et les modifications."
+verify = "Suivre les instructions documentées pour installer l'environnement verrouillé et lancer le pipeline sur le snapshot local : la vérification intégrée passe, les trois sorties prévues sont générées et inspectables, les métadonnées du manifeste correspondent au snapshot, et les comptes annuels des attributions initiales et des modifications correspondent aux baselines vérifiées."
 covers = ["R1", "R2"]
 after = []
 hitl = true
 risk = "high"
 notes = ["Contrôle supplémentaire du risque : comparer indépendamment les quatre comptes 2025 au snapshot local par une requête DuckDB directe."]
 references = ["docs/profilage-initial.md"]
+refine = true
 
 [[entry]]
 id = 2
