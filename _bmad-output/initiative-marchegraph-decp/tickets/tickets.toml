@@ -1,0 +1,33 @@
+[[epic]]
+id = 1
+slug = "epic-fondation-decp-reproductible"
+title = "Fondation DECP reproductible"
+description = "Une commande locale reconstruit le jeu analytique 2025 et sa comparaison 2024 depuis le snapshot identifié, avec une provenance et un profil de qualité consultables."
+covers = ["R1", "R2"]
+
+[[epic]]
+id = 2
+slug = "epic-resolution-identites-titulaires"
+title = "Résolution des identités titulaires"
+description = "Les titulaires du jeu préparé sont rapprochés selon des règles auditables et la qualité du rapprochement est mesurée sur un échantillon vérifié manuellement."
+covers = ["R5"]
+after = [{ epic = 1, needs = "le jeu analytique reproductible, ses identifiants titulaires et son profil de qualité" }]
+
+[[epic]]
+id = 3
+slug = "epic-graphe-connaissance-verifiable"
+title = "Graphe de connaissance vérifiable"
+description = "Le modèle de domaine approuvé est validé de façon répétable et le graphe répond aux dix questions de référence ou documente les limites des données."
+covers = ["R3", "R7"]
+after = [
+  { epic = 1, needs = "le schéma stable et le jeu analytique préparé" },
+  { epic = 2, needs = "le résultat de rapprochement des identités titulaires" },
+]
+
+[[epic]]
+id = 4
+slug = "epic-assistant-graphrag-local-evalue"
+title = "Assistant GraphRAG local évalué"
+description = "Un assistant local répond en français avec un chemin de preuve dans le graphe ou s'abstient, et son évaluation compare ses résultats à une baseline sans graphe en rapportant hallucinations et coûts."
+covers = ["R4", "R6"]
+after = [{ epic = 3, needs = "le graphe interrogeable, ses réponses de référence et son contrat de preuve" }]

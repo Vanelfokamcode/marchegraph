@@ -1,0 +1,25 @@
+[[entry]]
+id = 1
+type = "story"
+title = "Construire et exécuter le pipeline DECP"
+description = "Remplace le profilage ponctuel par un socle local reproductible avec Python 3.12.3 et DuckDB 2.0.0 déclarés et verrouillés, une commande DuckDB documentée et des tests intégrés. La personne exécute la commande sur le snapshot identifié et vérifie le Parquet préparé, le manifeste de provenance et le rapport initial. Le Parquet couvre les lignes notifiées en 2024 et 2025, conserve les colonnes d'origine et permet d'analyser séparément les attributions initiales et les modifications."
+verify = "Suivre les instructions documentées pour installer l'environnement verrouillé et lancer le pipeline sur le snapshot local : la vérification intégrée passe, les trois sorties prévues sont générées et inspectables, les métadonnées du manifeste correspondent au snapshot, et les comptes annuels des attributions initiales et des modifications correspondent aux baselines vérifiées."
+covers = ["R1", "R2"]
+after = []
+hitl = true
+risk = "high"
+notes = ["Contrôle supplémentaire du risque : comparer indépendamment les quatre comptes 2025 au snapshot local par une requête DuckDB directe."]
+references = ["docs/profilage-initial.md"]
+refine = true
+
+[[entry]]
+id = 2
+type = "story"
+title = "Compléter le rapport de qualité DECP"
+description = "Complète le rapport de qualité des attributions initiales 2024 et 2025 avec les taux de valeurs manquantes de acheteur_id, titulaire_id, montant, codeCPV, objet, lieuExecution_code, acheteur_region_code et offresRecues ; les anomalies montant_anomalie ; et les distributions de délai entre notification et publication, dont le nombre et le taux des délais négatifs. Ces constats restent descriptifs : ils ne retirent aucune ligne du jeu préparé."
+verify = "Exécuter la vérification intégrée du rapport : elle contrôle les taux des huit champs pour les deux années, dont titulaire_id (11,81 % en 2024 et 1,56 % en 2025), les anomalies de montant (6 811 suspect et 1 184 aberrant en 2025) et les délais négatifs (12 244, soit 3,76 % en 2024 ; 13 395, soit 4,24 % en 2025, parmi les lignes avec date de publication) ; les lignes signalées restent dans le Parquet préparé et les tests passent."
+covers = ["R1"]
+after = [1]
+hitl = false
+risk = "medium"
+references = ["docs/profilage-initial.md"]
