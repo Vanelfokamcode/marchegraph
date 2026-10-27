@@ -143,7 +143,9 @@ GraphRAG qui cite son chemin dans le graphe ou indique qu'il ne sait pas.
   propositions d'architecture à valider.
 - Open question: Comment représenter les versions de modification et les
   marchés avec plusieurs titulaires sans fixer ici la modélisation ?
-- Open question: La date ou version d'extraction du Parquet local doit être
-  identifiée pour rendre les résultats reproductibles.
+- Decision: 2026-10-27 — Identifier le Parquet local par le SHA-256
+  `b39257f135aada4637797239489dce63365c9e9ac793688af45d9d06eed7b6f0` et sa
+  taille de 250 253 419 octets ; cette empreinte ne donne pas sa date
+  d'extraction.
 - Open question: Quelles règles de protection et d'agrégation s'appliquent
   avant toute publication de données potentiellement personnelles ?
