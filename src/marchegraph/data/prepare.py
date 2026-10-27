@@ -29,8 +29,69 @@ EXPECTED_COUNTS = {
         "modification_distinct_uids": 104_722,
     },
 }
+QUALITY_FIELDS = (
+    "acheteur_id",
+    "titulaire_id",
+    "montant",
+    "codeCPV",
+    "objet",
+    "lieuExecution_code",
+    "acheteur_region_code",
+    "offresRecues",
+)
+EXPECTED_QUALITY = {
+    2024: {
+        "total_rows": 325_470,
+        "missing_values": {
+            "acheteur_id": 0,
+            "titulaire_id": 38_442,
+            "montant": 1_864,
+            "codeCPV": 2,
+            "objet": 116,
+            "lieuExecution_code": 245,
+            "acheteur_region_code": 1_687,
+            "offresRecues": 48_159,
+        },
+        "amount_anomalies": {None: 317_390, "aberrant": 1_184, "suspect": 6_896},
+        "publication_delay": {
+            "missing_publication_dates": 30,
+            "delay_count": 325_440,
+            "negative_count": 12_244,
+            "negative_rate_percent": 3.76,
+            "quantiles_days": {"p10": 0.0, "p50": 25.0, "p90": 266.0, "p99": 751.61},
+        },
+    },
+    2025: {
+        "total_rows": 315_998,
+        "missing_values": {
+            "acheteur_id": 0,
+            "titulaire_id": 4_930,
+            "montant": 557,
+            "codeCPV": 6,
+            "objet": 0,
+            "lieuExecution_code": 5,
+            "acheteur_region_code": 2_177,
+            "offresRecues": 43_116,
+        },
+        "amount_anomalies": {None: 308_003, "aberrant": 1_184, "suspect": 6_811},
+        "publication_delay": {
+            "missing_publication_dates": 33,
+            "delay_count": 315_965,
+            "negative_count": 13_395,
+            "negative_rate_percent": 4.24,
+            "quantiles_days": {"p10": 0.0, "p50": 20.0, "p90": 194.0, "p99": 458.0},
+        },
+    },
+}
 OUTPUT_FILENAMES = ("decp.parquet", "manifest.json", "quality-report.md")
-REQUIRED_COLUMNS = {"dateNotification", "modification_id", "uid"}
+REQUIRED_COLUMNS = {
+    "dateNotification",
+    "modification_id",
+    "uid",
+    *QUALITY_FIELDS,
+    "montant_anomalie",
+    "datePublicationDonnees",
+}
 
 
 class PipelineError(Exception):
@@ -45,9 +106,11 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _annual_counts(connection: duckdb.DuckDBPyConnection) -> dict[int, dict[str, int]]:
+def _annual_counts(
+    connection: duckdb.DuckDBPyConnection, view_name: str = "source_decp"
+) -> dict[int, dict[str, int]]:
     rows = connection.execute(
-        """
+        f"""
         SELECT
             year(dateNotification) AS year,
             count(*) FILTER (WHERE modification_id = 0) AS initial_award_rows,
@@ -56,7 +119,7 @@ def _annual_counts(connection: duckdb.DuckDBPyConnection) -> dict[int, dict[str,
             count(*) FILTER (WHERE modification_id > 0) AS modification_rows,
             count(DISTINCT uid) FILTER (WHERE modification_id > 0)
                 AS modification_distinct_uids
-        FROM source_decp
+        FROM {view_name}
         WHERE dateNotification >= DATE '2024-01-01'
           AND dateNotification < DATE '2026-01-01'
         GROUP BY year(dateNotification)
@@ -74,8 +137,99 @@ def _annual_counts(connection: duckdb.DuckDBPyConnection) -> dict[int, dict[str,
     }
 
 
+def _quality_metrics(
+    connection: duckdb.DuckDBPyConnection, view_name: str
+) -> dict[int, dict[str, Any]]:
+    missing_sql = ", ".join(
+        f"count(*) FILTER (WHERE {field} IS NULL) AS {field}"
+        for field in QUALITY_FIELDS
+    )
+    missing_rows = connection.execute(
+        f"""
+        SELECT year(dateNotification) AS year, count(*) AS total_rows, {missing_sql}
+        FROM {view_name}
+        WHERE modification_id = 0
+          AND dateNotification >= DATE '2024-01-01'
+          AND dateNotification < DATE '2026-01-01'
+        GROUP BY year(dateNotification)
+        ORDER BY year(dateNotification)
+        """
+    ).fetchall()
+    metrics: dict[int, dict[str, Any]] = {
+        int(row[0]): {
+            "total_rows": int(row[1]),
+            "missing_values": {
+                field: int(value) for field, value in zip(QUALITY_FIELDS, row[2:])
+            },
+            "amount_anomalies": {},
+            "publication_delay": {},
+        }
+        for row in missing_rows
+    }
+
+    for year, category, count in connection.execute(
+        f"""
+        SELECT year(dateNotification), montant_anomalie, count(*)
+        FROM {view_name}
+        WHERE modification_id = 0
+          AND dateNotification >= DATE '2024-01-01'
+          AND dateNotification < DATE '2026-01-01'
+        GROUP BY year(dateNotification), montant_anomalie
+        """
+    ).fetchall():
+        metrics[int(year)]["amount_anomalies"][category] = int(count)
+
+    delay_rows = connection.execute(
+        f"""
+        WITH delays AS (
+            SELECT
+                year(dateNotification) AS year,
+                datePublicationDonnees IS NULL AS publication_date_missing,
+                date_diff('day', dateNotification, datePublicationDonnees) AS delay_days
+            FROM {view_name}
+            WHERE modification_id = 0
+              AND dateNotification >= DATE '2024-01-01'
+              AND dateNotification < DATE '2026-01-01'
+        )
+        SELECT
+            year,
+            count(*) FILTER (WHERE publication_date_missing) AS missing_publication_dates,
+            count(delay_days) AS delay_count,
+            count(*) FILTER (WHERE delay_days < 0) AS negative_count,
+            quantile_cont(delay_days, 0.10) AS p10,
+            quantile_cont(delay_days, 0.50) AS p50,
+            quantile_cont(delay_days, 0.90) AS p90,
+            quantile_cont(delay_days, 0.99) AS p99
+        FROM delays
+        GROUP BY year
+        ORDER BY year
+        """
+    ).fetchall()
+    for year, missing_dates, delay_count, negative_count, p10, p50, p90, p99 in delay_rows:
+        year_metrics = metrics[int(year)]
+        delay_count = int(delay_count)
+        negative_count = int(negative_count)
+        year_metrics["publication_delay"] = {
+            "missing_publication_dates": int(missing_dates),
+            "delay_count": delay_count,
+            "negative_count": negative_count,
+            "negative_rate_percent": round(
+                100.0 * negative_count / delay_count, 2
+            )
+            if delay_count
+            else 0.0,
+            "quantiles_days": {
+                key: round(float(value), 2) if value is not None else None
+                for key, value in zip(("p10", "p50", "p90", "p99"), (p10, p50, p90, p99))
+            },
+        }
+    return metrics
+
+
 def _check_snapshot_baseline(
-    source_sha256: str, counts: dict[int, dict[str, int]]
+    source_sha256: str,
+    counts: dict[int, dict[str, int]],
+    quality_metrics: dict[int, dict[str, Any]],
 ) -> None:
     if source_sha256 != EXPECTED_SNAPSHOT_SHA256:
         raise PipelineError(
@@ -87,16 +241,43 @@ def _check_snapshot_baseline(
             "Les comptes calculés diffèrent des baselines vérifiées : "
             f"attendu={EXPECTED_COUNTS}, observé={counts}"
         )
+    if quality_metrics != EXPECTED_QUALITY:
+        raise PipelineError(
+            "Les indicateurs qualité calculés diffèrent des baselines vérifiées : "
+            f"attendu={EXPECTED_QUALITY}, observé={quality_metrics}"
+        )
 
 
-def _render_report(counts: dict[int, dict[str, int]]) -> str:
+def _format_percent(numerator: int, denominator: int) -> str:
+    if denominator == 0:
+        return "n/a"
+    percentage = 100.0 * numerator / denominator
+    if 0 < percentage < 0.01:
+        return "<0,01 %"
+    return f"{percentage:.2f}".replace(".", ",") + " %"
+
+
+def _format_days(value: float | None) -> str:
+    if value is None:
+        return "n/a"
+    rounded = round(value, 2)
+    if rounded == 0:
+        return "0"
+    formatted = f"{rounded:.2f}".rstrip("0").rstrip(".")
+    return formatted.replace(".", ",")
+
+
+def _render_report(
+    counts: dict[int, dict[str, int]],
+    quality_metrics: dict[int, dict[str, Any]],
+) -> str:
     lines = [
-        "# Préparation DECP — rapport initial",
+        "# Préparation DECP — rapport de qualité",
         "",
         "Périmètre : lignes notifiées en 2024 et 2025, toutes régions.",
         "Les attributions initiales (`modification_id = 0`) et les lignes de",
         "modification (`modification_id > 0`) sont comptées séparément.",
-        "Ce rapport initial ne remplace pas le profil détaillé de qualité.",
+        "Les indicateurs de qualité ci-dessous portent sur les attributions initiales.",
         "",
         "| Année | Type de ligne | Nombre de lignes | `uid` distincts |",
         "|---:|---|---:|---:|",
@@ -128,8 +309,84 @@ def _render_report(counts: dict[int, dict[str, int]]) -> str:
             "des nombres de marchés distincts et ne sont pas ajoutés aux",
             "statistiques d'attribution initiale.",
             "",
+            "## Valeurs manquantes",
+            "",
+            "Les taux sont calculés sur toutes les lignes d'attribution initiale",
+            "de l'année ; les nombres indiquent le numérateur et le dénominateur.",
+            "",
+            "| Année | Champ | Valeurs manquantes | Total | Taux |",
+            "|---:|---|---:|---:|---:|",
         ]
     )
+    for year in (2024, 2025):
+        year_metrics = quality_metrics.get(year)
+        if year_metrics is None:
+            continue
+        total = year_metrics["total_rows"]
+        for field in QUALITY_FIELDS:
+            missing = year_metrics["missing_values"][field]
+            lines.append(
+                f"| {year} | `{field}` | {missing} | {total} | "
+                f"{_format_percent(missing, total)} |"
+            )
+
+    lines.extend(
+        [
+            "",
+            "## Anomalies de montant",
+            "",
+            "Les taux sont calculés sur toutes les lignes d'attribution initiale.",
+            "`NULL` signifie que la source ne fournit pas de catégorie.",
+            "",
+            "| Année | Catégorie source | Nombre de lignes | Total | Taux |",
+            "|---:|---|---:|---:|---:|",
+        ]
+    )
+    for year in (2024, 2025):
+        year_metrics = quality_metrics.get(year)
+        if year_metrics is None:
+            continue
+        total = year_metrics["total_rows"]
+        categories = year_metrics["amount_anomalies"]
+        for category in sorted(categories, key=lambda value: (value is None, str(value))):
+            count = categories[category]
+            label = "NULL" if category is None else str(category)
+            lines.append(
+                f"| {year} | {label} | {count} | {total} | "
+                f"{_format_percent(count, total)} |"
+            )
+
+    lines.extend(
+        [
+            "",
+            "## Délais de publication",
+            "",
+            "Délai = `datePublicationDonnees` moins `dateNotification`, en jours.",
+            "Les dates de publication manquantes sont comptées sur toutes les",
+            "attributions initiales ; taux négatif et quantiles utilisent les",
+            "seuls délais calculables. Les quantiles sont continus.",
+            "",
+            "| Année | Dates publication manquantes | Délais calculables | Délais négatifs | Taux négatif | p10 (j) | p50 (j) | p90 (j) | p99 (j) |",
+            "|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+        ]
+    )
+    for year in (2024, 2025):
+        year_metrics = quality_metrics.get(year)
+        if year_metrics is None:
+            continue
+        delay = year_metrics["publication_delay"]
+        quantiles = delay["quantiles_days"]
+        quantile_values = [
+            _format_days(quantiles[key]) for key in ("p10", "p50", "p90", "p99")
+        ]
+        lines.append(
+            f"| {year} | {delay['missing_publication_dates']} | "
+            f"{delay['delay_count']} | {delay['negative_count']} | "
+            f"{_format_percent(delay['negative_count'], delay['delay_count'])} | "
+            + " | ".join(quantile_values)
+            + " |"
+        )
+    lines.append("")
     return "\n".join(lines)
 
 
@@ -139,6 +396,7 @@ def _write_outputs(
     output_dir: Path,
     source_sha256: str,
     counts: dict[int, dict[str, int]],
+    verify_baseline: bool,
 ) -> None:
     output_dir.parent.mkdir(parents=True, exist_ok=True)
     stage_dir = Path(
@@ -156,6 +414,15 @@ def _write_outputs(
             "AND dateNotification < DATE '2026-01-01') "
             f"TO '{parquet_sql_path}' (FORMAT PARQUET, COMPRESSION ZSTD)"
         )
+        connection.read_parquet(str(parquet_path)).create_view("prepared_decp")
+        prepared_counts = _annual_counts(connection, "prepared_decp")
+        if prepared_counts != counts:
+            raise PipelineError(
+                "Les comptes du Parquet préparé diffèrent de ceux du snapshot source."
+            )
+        quality_metrics = _quality_metrics(connection, "prepared_decp")
+        if verify_baseline:
+            _check_snapshot_baseline(source_sha256, prepared_counts, quality_metrics)
 
         manifest: dict[str, Any] = {
             "source": {
@@ -173,7 +440,9 @@ def _write_outputs(
             json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
-        report_path.write_text(_render_report(counts), encoding="utf-8")
+        report_path.write_text(
+            _render_report(prepared_counts, quality_metrics), encoding="utf-8"
+        )
 
         if output_dir.exists() and not output_dir.is_dir():
             raise OSError(f"Le chemin de sortie n'est pas un dossier : {output_dir}")
@@ -262,9 +531,25 @@ def prepare(
             )
         counts = _annual_counts(connection)
         if verify_baseline:
-            _check_snapshot_baseline(source_sha256, counts)
+            if source_sha256 != EXPECTED_SNAPSHOT_SHA256:
+                raise PipelineError(
+                    "Le SHA-256 du snapshot ne correspond pas au snapshot profilé ; "
+                    "les baselines intégrées ne peuvent pas être vérifiées."
+                )
+            if counts != EXPECTED_COUNTS:
+                raise PipelineError(
+                    "Les comptes calculés diffèrent des baselines vérifiées : "
+                    f"attendu={EXPECTED_COUNTS}, observé={counts}"
+                )
         try:
-            _write_outputs(connection, source, output_dir, source_sha256, counts)
+            _write_outputs(
+                connection,
+                source,
+                output_dir,
+                source_sha256,
+                counts,
+                verify_baseline,
+            )
         except (OSError, duckdb.Error) as error:
             raise PipelineError(f"Écriture des sorties impossible : {error}") from error
         return counts
