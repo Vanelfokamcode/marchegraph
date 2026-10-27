@@ -152,8 +152,8 @@ GraphRAG qui cite son chemin dans le graphe ou indique qu'il ne sait pas.
   d'extraction.
 - Decision: 2026-10-27 — Garder la démonstration locale et ne publier ni les
   lignes DECP ni les résultats dérivés.
-- Open question: Le code source, la documentation technique ou une présentation
-  de portfolio peuvent-ils être publics alors que la démonstration et les
-  sorties des données restent locales ?
+- Decision: 2026-10-27 — Décider à la fin du projet si le code et la
+  documentation technique seront publiés ; les données et résultats restent
+  locaux.
 - Open question: Quelles règles de protection et d'agrégation s'appliquent
   avant toute publication de données potentiellement personnelles ?
