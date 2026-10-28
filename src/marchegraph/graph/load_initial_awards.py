@@ -380,7 +380,7 @@ def _annual_source_counts(
     }
 
 
-def _iter_batches(
+def iter_batches(
     connection: duckdb.DuckDBPyConnection,
     query: str,
     batch_size: int,
@@ -476,7 +476,7 @@ def _market_batches(
     connection: duckdb.DuckDBPyConnection,
     batch_size: int,
 ) -> Iterator[list[dict[str, object]]]:
-    for batch in _iter_batches(connection, MARKET_QUERY, batch_size):
+    for batch in iter_batches(connection, MARKET_QUERY, batch_size):
         for row in batch:
             row["annee"] = int(row["annee"])
             row["acheteur_id"] = str(row["acheteur_id"])
@@ -498,7 +498,7 @@ def _write_batch(
     transaction.run(query, rows=rows, source_id=source_id).consume()
 
 
-def _write_batches(
+def write_batches(
     session: Session,
     query: str,
     batches: Iterator[list[dict[str, object]]],
@@ -552,25 +552,25 @@ def load_initial_awards(
         expected = _annual_source_counts(connection)
 
         _write_constraints(session)
-        _write_batches(
+        write_batches(
             session,
             UPSERT_BUYERS,
-            _iter_batches(connection, BUYER_QUERY, batch_size),
+            iter_batches(connection, BUYER_QUERY, batch_size),
         )
-        _write_batches(
+        write_batches(
             session,
             UPSERT_HOLDERS,
-            _iter_batches(connection, HOLDER_QUERY, batch_size),
+            iter_batches(connection, HOLDER_QUERY, batch_size),
         )
-        _write_batches(
+        write_batches(
             session,
             UPSERT_MARKETS,
             _market_batches(connection, batch_size),
         )
-        _write_batches(
+        write_batches(
             session,
             UPSERT_HOLDER_LINKS,
-            _iter_batches(connection, HOLDER_LINK_QUERY, batch_size),
+            iter_batches(connection, HOLDER_LINK_QUERY, batch_size),
         )
         actual = _graph_counts(session)
         if actual != expected:

@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from marchegraph.graph.load_initial_awards import (
     HOLDER_LINK_QUERY,
     _annual_source_counts,
-    _iter_batches,
+    iter_batches,
     _market_batches,
     _validate_views,
 )
@@ -235,7 +235,7 @@ class InitialAwardImportTests(unittest.TestCase):
     def test_only_resolved_typed_identifiers_create_holder_links(self) -> None:
         links = [
             row
-            for batch in _iter_batches(self.connection, HOLDER_LINK_QUERY, 2)
+            for batch in iter_batches(self.connection, HOLDER_LINK_QUERY, 2)
             for row in batch
         ]
 

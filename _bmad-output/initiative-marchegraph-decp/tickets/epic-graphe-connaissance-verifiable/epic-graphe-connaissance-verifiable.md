@@ -142,3 +142,22 @@ les réponses de référence sont répétables et explicables.
   montant en signalant ces absences ; exclure les marchés multi-valués du total
   et en rapporter le nombre. La story 3.5 établit le contrat commun de requête
   et de preuve que la story 3.6 réutilise.
+- Source conflict: 2026-10-28 — Parmi les modifications notifiées en 2024–2025,
+  83 500 `uid` distincts (65 953 en 2024 et 37 109 en 2025) n'ont aucune
+  attribution initiale dans le Parquet préparé. Cela concerne 182 283 couples
+  `uid`/`modification_id` (116 605 en 2024 et 65 678 en 2025) ; les relier à un
+  marché initial exigerait d'élargir la portée ou de représenter explicitement
+  l'absence de ce marché.
+- Source conflict: 2026-10-28 — Plusieurs lignes source partagent une même
+  version `(uid, modification_id)` ; les valeurs varient notamment sur
+  `objet` (776 versions), `dureeMois` (378), `montant` (298), `procedure`
+  (214), `titulaire_id` (63 644) et `nature` (1). Une propriété scalaire
+  ferait perdre des valeurs.
+- Decision: 2026-10-28 — Conserver chaque version de modification comme nœud
+  identifié par `(uid, modification_id)` ; la relier au marché initial
+  uniquement s'il existe dans le Parquet 2024–2025. Sinon, conserver le nœud
+  sans lien, le marquer explicitement comme marché initial absent et rapporter
+  le nombre de cas. Ne pas créer de marché placeholder ni compter ces versions
+  comme des attributions initiales. Comme pour les marchés initiaux, conserver
+  les valeurs distinctes et signaler séparément les valeurs manquantes au lieu
+  de choisir arbitrairement une ligne source.

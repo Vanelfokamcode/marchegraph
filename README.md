@@ -68,6 +68,17 @@ aucune identité non résolue ne crée de lien titulaire. Les lots sont idempote
 et la commande vérifie les comptes annuels de marchés, titulaires résolus et
 liens contre les Parquet. Elle n'affiche que ces comptes agrégés.
 
+Après l'import initial, les versions de modification se chargent séparément :
+
+```bash
+PYTHONPATH=src uv run --locked python -m marchegraph.graph.load_modifications
+```
+
+Le chargeur crée une version par couple `(uid, modification_id)`. Il relie
+chaque version à un marché initial existant ; si le snapshot ne contient pas
+ce marché, il conserve la version sans lien, marque explicitement cette limite
+et en rapporte le nombre, sans créer de marché fictif.
+
 Le manifeste JSON indique le chemin source, son SHA-256, sa taille en octets,
 la date d'extraction (`null`, car inconnue) et les chemins des sorties. Le
 rapport de qualité distingue les lignes et les `uid` distincts des attributions
