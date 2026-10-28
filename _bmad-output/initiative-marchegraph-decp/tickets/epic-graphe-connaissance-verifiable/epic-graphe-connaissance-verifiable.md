@@ -10,6 +10,7 @@ companions: ["_bmad-output/initiative-marchegraph-decp/architecture-marchegraph-
 after: ["epic-fondation-decp-reproductible", "epic-resolution-identites-titulaires"]
 refined: true
 risk: high
+status: in-progress
 ---
 
 # Graphe de connaissance vérifiable
@@ -107,11 +108,73 @@ les réponses de référence sont répétables et explicables.
   modèle par l'utilisateur puis démonstration locale d'un cas synthétique
   traversant le chargement, la validation, une réponse avec preuve et l'export
   RDF.
+- Decision: 2026-10-28 — Un `Marche` canonique par `uid` peut être relié à
+  plusieurs titulaires ; les liens multiples ne créent pas de nouveaux
+  marchés.
+- Decision: 2026-10-28 — Chaque modification est représentée comme un nœud
+  de version relié au marché initial, sans être comptée comme un marché
+  initial supplémentaire.
+- Decision: 2026-10-28 — Utiliser OWL pour le modèle, SKOS pour les concepts
+  CPV et SHACL pour la validation ; l'export RDF est généré depuis Neo4j,
+  source de vérité opérationnelle.
+- Decision: 2026-10-28 — Le tracer bullet est uniquement synthétique ; il ne
+  charge ni ne publie de données DECP.
 - Decision: 2026-10-28 — Charger d'abord les attributions initiales, puis les
   modifications ; appliquer ensuite les validations, dérouler les requêtes de
   référence par groupes ordonnés, effectuer le refactor sweep et terminer par
   une vérification intégrée de bout en bout.
-- Open question: Comment représenter les versions de modification et les
-  marchés avec plusieurs titulaires dans le graphe ?
-- Open question: Quel mapping RDF, quelle sérialisation et quelles formes SHACL
-  mettent en œuvre le modèle approuvé par l'utilisateur ?
+- Open question: Quelles bibliothèques locales assurent la sérialisation RDF
+  et l'exécution SHACL avec les versions verrouillées du projet ?
+- Source conflict: 2026-10-28 — Le Parquet initial contient plusieurs valeurs
+  non nulles pour un même `uid` sur `objet` (5 734 marchés), `montant` (564),
+  `procedure` (32), `dureeMois` (127) et `nature` (3). Pour `montant`, 17
+  autres marchés ont à la fois une valeur et une valeur manquante ; pour
+  `dureeMois`, 23. Le compte de marchés par `uid` reste univoque, mais une
+  propriété scalaire unique ferait perdre des valeurs source ou en choisirait
+  une arbitrairement.
+- Decision: 2026-10-28 — L'utilisateur approuve un `Marche` par `uid` avec
+  toutes les valeurs distinctes de `objet`, `montant`, `procedure`, `dureeMois`
+  et `nature` conservées comme valeurs multiples ; la présence de lignes source
+  sans valeur est signalée séparément. Une requête ne doit pas agréger
+  silencieusement les montants multi-valués.
+- Decision: 2026-10-28 — Pour les agrégations de montants, inclure une fois les
+  marchés avec une seule valeur distincte, même si d'autres lignes sont sans
+  montant en signalant ces absences ; exclure les marchés multi-valués du total
+  et en rapporter le nombre. La story 3.5 établit le contrat commun de requête
+  et de preuve que la story 3.6 réutilise.
+- Decision: 2026-10-28 — Pour la question 1, classer les acheteurs de 2025 au
+  niveau national, sans filtre régional, conformément au périmètre retenu.
+  La story 3.7 charge la région au niveau du marché pour la question 7, sans
+  modifier le périmètre national de cette question.
+- Decision: 2026-10-28 — Pour la question 5, présenter séparément les comptes
+  par nature et par procédure. Ne pas reconstruire de paires nature–procédure
+  quand les valeurs agrégées par `uid` ne préservent pas leur association
+  source ligne par ligne ; exposer le nombre de valeurs absentes et multiples.
+- Decision: 2026-10-28 — Pour les questions 3 et 8, une famille CPV correspond
+  au groupe formé par les trois premiers chiffres du code. Exclure les marchés
+  aux montants ou durées distincts multiples de l'agrégat correspondant et
+  rapporter leur nombre ; compter une valeur unique une fois même si d'autres
+  lignes source sont sans valeur, en signalant ces manques.
+- Decision: 2026-10-28 — Pour respecter AD-5, les contrats de réponse et de
+  preuve restent dans un module indépendant des pilotes et bibliothèques
+  d'interface. Pour respecter AD-4, les points d'entrée Neo4j refusent toute
+  URI qui ne cible pas la boucle locale.
+- Source conflict: 2026-10-28 — Parmi les modifications notifiées en 2024–2025,
+  83 500 `uid` distincts (65 953 en 2024 et 37 109 en 2025) n'ont aucune
+  attribution initiale dans le Parquet préparé. Cela concerne 182 283 couples
+  `uid`/`modification_id` (116 605 en 2024 et 65 678 en 2025) ; les relier à un
+  marché initial exigerait d'élargir la portée ou de représenter explicitement
+  l'absence de ce marché.
+- Source conflict: 2026-10-28 — Plusieurs lignes source partagent une même
+  version `(uid, modification_id)` ; les valeurs varient notamment sur
+  `objet` (776 versions), `dureeMois` (378), `montant` (298), `procedure`
+  (214), `titulaire_id` (63 644) et `nature` (1). Une propriété scalaire
+  ferait perdre des valeurs.
+- Decision: 2026-10-28 — Conserver chaque version de modification comme nœud
+  identifié par `(uid, modification_id)` ; la relier au marché initial
+  uniquement s'il existe dans le Parquet 2024–2025. Sinon, conserver le nœud
+  sans lien, le marquer explicitement comme marché initial absent et rapporter
+  le nombre de cas. Ne pas créer de marché placeholder ni compter ces versions
+  comme des attributions initiales. Comme pour les marchés initiaux, conserver
+  les valeurs distinctes et signaler séparément les valeurs manquantes au lieu
+  de choisir arbitrairement une ligne source.
