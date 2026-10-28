@@ -1,7 +1,7 @@
 ---
 title: "Effectuer le refactor sweep du graphe"
 ticket: 8
-status: built
+status: done
 ---
 
 # Revue des dettes techniques du graphe
