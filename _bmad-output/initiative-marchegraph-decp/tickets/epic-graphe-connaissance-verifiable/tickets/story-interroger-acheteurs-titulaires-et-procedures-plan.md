@@ -1,7 +1,7 @@
 ---
 title: "Interroger acheteurs, titulaires et procédures"
 ticket: 5
-status: built
+status: done
 ---
 
 # Contrat commun de requête et de preuve
