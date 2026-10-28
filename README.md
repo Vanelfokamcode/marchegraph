@@ -20,6 +20,10 @@ uv run --locked python src/marchegraph/data/prepare.py \
 uv run --locked python src/marchegraph/entity_resolution/prepare.py \
   --input data/prepared/decp.parquet \
   --output-dir data/prepared
+uv run --locked python src/marchegraph/entity_resolution/evaluate.py \
+  --input data/prepared/decp.parquet \
+  --identities data/prepared/holder-identities.parquet \
+  --output-dir data/prepared/holder-review
 ```
 
 Le manifeste JSON indique le chemin source, son SHA-256, sa taille en octets,
@@ -36,6 +40,18 @@ La commande de résolution consomme ce Parquet préparé et écrit localement
 dossier. Elle regroupe les lignes d'attribution initiale par type et valeur
 d'identifiant normalisés, conserve les identifiants manquants dans des
 catégories non résolues, et ne rapproche pas les titulaires sur leur nom.
+
+La commande d'évaluation crée localement un échantillon reproductible de
+100 groupes résolus, 50 par année (graine 42), avec leurs variantes de noms.
+Dans `holder-review-sample.csv`, renseignez `manual_review_label` avec
+`correct`, `incorrect` ou `indeterminate`, et ajoutez éventuellement une note.
+`correct` signifie que les éléments disponibles soutiennent un titulaire
+unique ; `incorrect` signale un groupe qui semble mélanger plusieurs titulaires ;
+`indeterminate` indique que les éléments sont insuffisants. Consultez
+`holder-review-name-variants.csv` par `sample_id`, puis relancez la commande
+pour recalculer le rapport. Les labels vides sont comptés comme en attente ;
+les cas indéterminés sont exclus du dénominateur de précision et rapportés
+séparément. L'échantillon, les noms et les labels restent locaux.
 
 Le pipeline refuse un snapshot différent de celui profilé tant que ses
 baselines n'ont pas été réévaluées. Une erreur de lecture, un snapshot

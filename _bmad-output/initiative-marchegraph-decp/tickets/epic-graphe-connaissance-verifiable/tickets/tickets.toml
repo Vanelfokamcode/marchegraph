@@ -1,0 +1,98 @@
+[[entry]]
+id = 1
+type = "story"
+title = "Valider le modèle et démontrer le tracer bullet du graphe"
+description = "Le propriétaire approuve la représentation des modifications, des marchés multi-titulaires et les formats de validation et d'export ; un cas synthétique traverse ensuite le chargement Neo4j, la validation, la question 1 avec preuve et l'export RDF."
+verify = "Après l'approbation du modèle, la commande locale charge le cas synthétique avec un marché multi-titulaire et une modification, valide ses données, retourne le résultat attendu à la question 1 avec ses références de preuve et produit l'export RDF approuvé."
+covers = ["R3", "R7"]
+after = []
+hitl = true
+risk = "high"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Charger les attributions initiales dans le graphe"
+description = "Charge les attributions initiales 2024 et 2025 depuis le Parquet préparé et les identités titulaires résolues, sans publier les sorties ni compter les modifications comme de nouveaux marchés."
+verify = "Sur les entrées locales, l'import répété est idempotent et les comptes de marchés et de titulaires par année correspondent aux entrées retenues, avec les identifiants conservés comme chaînes."
+covers = ["R3"]
+after = [1, "epic-fondation-decp-reproductible", "epic-resolution-identites-titulaires"]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 3
+type = "story"
+title = "Représenter les versions de modification des marchés"
+description = "Charge les lignes de modification selon le modèle approuvé, les relie au marché concerné et préserve leur distinction avec l'attribution initiale."
+verify = "L'import idempotent montre les versions d'un marché sans les compter comme de nouveaux marchés et expose leur historique conformément au modèle approuvé."
+covers = ["R3"]
+after = [2]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 4
+type = "story"
+title = "Valider les données du graphe et tracer les rejets"
+description = "Applique les règles approuvées aux données chargées et permet de relier chaque enregistrement invalide à la règle de validation concernée, sans supprimer silencieusement les lignes."
+verify = "La validation locale signale un jeu synthétique invalide avec l'identifiant de la règle fautive et conserve les données rejetées avec leur motif."
+covers = ["R7"]
+after = [3]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 5
+type = "story"
+title = "Interroger acheteurs, titulaires et procédures"
+description = "Réalise les questions de référence 1, 2, 5 et 6 sur les attributions initiales : principaux acheteurs par nombre de `uid` distincts, titulaires récurrents par acheteur, procédures par nature de marché et titulaires travaillant avec plusieurs acheteurs."
+verify = "Des fixtures déterministes vérifient les résultats des quatre questions ; l'exécution locale retourne les résultats et leurs références de preuve dans le graphe."
+covers = ["R3"]
+after = [2]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 6
+type = "story"
+title = "Interroger montants et durées par CPV"
+description = "Réalise les questions de référence 3 et 8 sur les montants déclarés et les durées, regroupés par famille CPV, en comptant chaque marché une seule fois et en exposant les limites sans assimiler les montants à l'exécution financière."
+verify = "Des fixtures déterministes, dont un marché multi-titulaire, vérifient les agrégations par famille CPV sans doubler les montants ; les résultats locaux incluent leurs preuves et qualifient les montants déclarés, notamment les plafonds des accords-cadres."
+covers = ["R3"]
+after = [5]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 7
+type = "story"
+title = "Interroger modifications, thèmes et limites des données"
+description = "Réalise les questions de référence 4, 7, 9 et 10 sur l'historique des modifications, les thèmes par région de l'acheteur, les variantes de noms sous une identité résolue et les données manquantes ou incohérentes."
+verify = "Des fixtures déterministes vérifient les quatre questions ; les noms seuls ne fusionnent pas des titulaires et les réponses locales exposent les limites et preuves disponibles."
+covers = ["R3"]
+after = [3, 4, 6]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 8
+type = "story"
+title = "Effectuer le refactor sweep du graphe"
+description = "Nettoie uniquement les dettes techniques reportées dans les plans et revues des stories précédentes, sans étendre le périmètre fonctionnel."
+verify = "La suite de tests du graphe passe sans changement de comportement et les dettes différées dans le périmètre sont résolues ou explicitement consignées."
+covers = []
+after = [1, 2, 3, 4, 5, 6, 7]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 9
+type = "story"
+title = "Vérifier le graphe de bout en bout"
+description = "Vérifie l'intégration locale du modèle, des chargements, des règles de validation, de l'export RDF et des dix réponses de référence ou limites explicites."
+verify = "Une exécution de bout en bout sur les fixtures confirme les dix questions, leurs preuves ou limites, les rejets traçables et l'export RDF, sans dépendance distante ni publication de données."
+covers = ["R3", "R7"]
+after = [8]
+hitl = false
+risk = "high"
