@@ -79,6 +79,24 @@ chaque version à un marché initial existant ; si le snapshot ne contient pas
 ce marché, il conserve la version sans lien, marque explicitement cette limite
 et en rapporte le nombre, sans créer de marché fictif.
 
+### Vérification bout en bout sur fixture locale
+
+Le test d'intégration charge des Parquet synthétiques dans Neo4j local,
+exécute les dix questions de référence, puis vérifie la validation SHACL,
+l'export RDF et la traçabilité JSON Lines d'un rejet. Il refuse toute URI Neo4j
+qui ne pointe pas vers `localhost`, `127.0.0.1` ou `::1`, et supprime ses nœuds
+de fixture à la fin. Il n'utilise ni le snapshot DECP ni de service distant ;
+les fichiers d'export et de rejet restent dans un dossier temporaire.
+
+Après avoir démarré Neo4j local et défini `NEO4J_PASSWORD`, lancez :
+
+```bash
+uv run --locked python -m unittest tests.test_graph_end_to_end
+```
+
+Sans `NEO4J_PASSWORD`, ce test d'intégration est ignoré ; la suite standard
+reste exécutable sans Neo4j.
+
 ### Validation locale et rejets
 
 La validation SHACL de `marchegraph.graph.validation.validate_graph` ne modifie
