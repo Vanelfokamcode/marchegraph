@@ -37,7 +37,7 @@ pour 2025 et 2024.
   produisent la même identité, que des types ou valeurs différents ne sont pas
   fusionnés et que les zéros initiaux sont conservés.
 - R2 (parent R5) : La qualité de cette règle est mesurée sur un échantillon
-  vérifié manuellement par une personne autre que le propriétaire du projet.
+  vérifié manuellement par le propriétaire du projet.
   Le rapport estime la précision des groupes rapprochés, en indique la taille
   et la composition, les résultats corrects et incorrects, le dénominateur et
   les limites ; il ne prétend pas mesurer le rappel ni les rapprochements
@@ -53,8 +53,8 @@ pour 2025 et 2024.
   les lignes par couple type-valeur normalisé sans modifier le Parquet préparé.
 - Les lignes sans type ou valeur d'identifiant restent non rapprochées et sont
   rapportées séparément ; aucune fusion automatique ne se fait par le nom seul.
-- Un échantillon de groupes rapprochés est vérifié par une personne distincte
-  du propriétaire du projet ; le rapport publie la précision observée, ses
+- Un échantillon de groupes rapprochés est vérifié manuellement par le
+  propriétaire du projet ; le rapport publie la précision observée, ses
   effectifs, son dénominateur et ses limites, sans seuil préétabli ni
   revendication de rappel.
 - Le rapport distingue 2025, périmètre principal, de 2024, comparaison
@@ -106,28 +106,28 @@ pour 2025 et 2024.
   et en le passant en majuscules ; ne retirer que les espaces externes de la
   valeur et préserver sa casse, sa ponctuation, ses espaces internes et ses
   zéros initiaux.
-- Open question: Quel relecteur externe indépendant et nommé est disponible
-  pour vérifier manuellement l'échantillon avant le démarrage de l'étape HITL ?
-  Le seuil de réussite restera ouvert jusqu'à la mesure de la baseline.
+- Open question: Le seuil de réussite restera ouvert jusqu'à la mesure de la
+  baseline.
 - Decision: 2026-10-27 — La story qui demande l'adjudication manuelle de
   l'échantillon sera marquée `hitl = true` lors du découpage.
 - Decision: 2026-10-27 — Évaluer la précision des groupes rapprochés ; décrire
   les non-résolus et variantes de noms sans revendiquer une mesure du rappel ni
   des rapprochements manqués.
-- Decision: 2026-10-27 — La vérification manuelle est réalisée par une
-  personne autre que le propriétaire du projet ; son identité est fixée avant
-  que la story HITL commence.
 - Decision: 2026-10-28 — Pour une baseline descriptive reproductible,
   vérifier 100 groupes d'identité canonique résolus, échantillonnés
   aléatoirement avec graine fixe 42, 50 en 2024 et 50 en 2025 ; rapporter la
   composition par type sans prétendre à une précision statistique par type.
+- Decision: 2026-10-28 — Le propriétaire du projet, qui est l'utilisateur,
+  réalisera lui-même la revue manuelle des 100 groupes ; cette décision
+  remplace l'exigence antérieure d'un relecteur distinct du propriétaire.
 - Decision: 2026-10-27 — La story 2.1 est le tracer bullet : elle traverse le
   contrat préparé, la clé d'identité typée et le résultat local vérifiable ;
   la story 2.2 suit pour traiter le risque le moins certain, la mesure manuelle
   de précision.
 - Decision: 2026-10-27 — L'utilisateur approuve deux stories : résolution
   déterministe en 2.1, puis évaluation manuelle de précision en 2.2. La story
-  HITL reste bloquée jusqu'à confirmation du relecteur externe.
+  2.2 inclut la revue manuelle HITL de l'échantillon par le propriétaire du
+  projet.
 - Risk rationale: une fusion erronée ou une identité scindée biaiserait les
   comptes de titulaires et les analyses de réseau en aval ; la règle
   conservatrice et l'échantillon vérifié limitent ce risque.
