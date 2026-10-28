@@ -1,5 +1,6 @@
 @prefix mg:  <https://example.org/marchegraph/> .
 @prefix sh:  <http://www.w3.org/ns/shacl#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 mg:MarcheShape a sh:NodeShape ;
@@ -10,8 +11,14 @@ mg:MarcheShape a sh:NodeShape ;
         sh:message "Un marché doit avoir au moins un titulaire."@fr ] ;
     sh:property [ sh:path mg:montantHT ; sh:minCount 1 ; sh:datatype xsd:decimal ; sh:minExclusive 0 ;
         sh:message "Le montant HT doit être un nombre strictement positif."@fr ] ;
-    sh:property [ sh:path mg:categorieCPV ; sh:minCount 1 ;
+    sh:property [ sh:path mg:categorieCPV ; sh:minCount 1 ; sh:class skos:Concept ;
         sh:message "Un marché doit avoir un code CPV."@fr ] .
+
+mg:ModificationShape a sh:NodeShape ;
+    sh:targetClass mg:Modification ;
+    sh:property [ sh:path mg:modificationDe ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class mg:Marche ;
+        sh:message "Une modification doit concerner exactement un marché."@fr ] .
 
 mg:TitulaireShape a sh:NodeShape ;
     sh:targetClass mg:Titulaire ;

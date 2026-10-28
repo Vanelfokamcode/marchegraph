@@ -9,6 +9,7 @@ mg:Acheteur a owl:Class ; rdfs:label "Acheteur"@fr .
 mg:Hopital  a owl:Class ; rdfs:subClassOf mg:Acheteur ; rdfs:label "Hôpital"@fr .
 mg:Titulaire a owl:Class ; rdfs:label "Titulaire"@fr .
 mg:Marche   a owl:Class ; rdfs:label "Marché"@fr .
+mg:Modification a owl:Class ; rdfs:label "Modification de marché"@fr .
 
 # OWL : les relations et les attributs
 mg:acheteur     a owl:ObjectProperty   ; rdfs:domain mg:Marche ; rdfs:range mg:Acheteur .
@@ -17,6 +18,13 @@ mg:categorieCPV a owl:ObjectProperty   ; rdfs:domain mg:Marche ; rdfs:range skos
 mg:montantHT    a owl:DatatypeProperty ; rdfs:domain mg:Marche ; rdfs:range xsd:decimal .
 mg:objet        a owl:DatatypeProperty ; rdfs:domain mg:Marche ; rdfs:range rdfs:Literal .
 mg:siret        a owl:DatatypeProperty ; rdfs:domain mg:Titulaire ; rdfs:range xsd:string .
+mg:uid         a owl:DatatypeProperty ; rdfs:domain mg:Marche ; rdfs:range xsd:string .
+mg:annee       a owl:DatatypeProperty ; rdfs:domain mg:Marche ; rdfs:range xsd:gYear .
+mg:nom         a owl:DatatypeProperty ; rdfs:range rdfs:Literal .
+mg:identifiant a owl:DatatypeProperty ; rdfs:range xsd:string .
+mg:typeIdentifiant a owl:DatatypeProperty ; rdfs:domain mg:Titulaire ; rdfs:range xsd:string .
+mg:valeurIdentifiant a owl:DatatypeProperty ; rdfs:domain mg:Titulaire ; rdfs:range xsd:string .
+mg:modificationDe a owl:ObjectProperty ; rdfs:domain mg:Modification ; rdfs:range mg:Marche .
 
 # SKOS : les codes CPV et leur hiérarchie (extrait)
 mg:CPV a skos:ConceptScheme ; skos:prefLabel "Codes CPV (extrait)"@fr .

@@ -10,6 +10,7 @@ companions: ["_bmad-output/initiative-marchegraph-decp/architecture-marchegraph-
 after: ["epic-fondation-decp-reproductible", "epic-resolution-identites-titulaires"]
 refined: true
 risk: high
+status: in-progress
 ---
 
 # Graphe de connaissance vérifiable
@@ -107,11 +108,20 @@ les réponses de référence sont répétables et explicables.
   modèle par l'utilisateur puis démonstration locale d'un cas synthétique
   traversant le chargement, la validation, une réponse avec preuve et l'export
   RDF.
+- Decision: 2026-10-28 — Un `Marche` canonique par `uid` peut être relié à
+  plusieurs titulaires ; les liens multiples ne créent pas de nouveaux
+  marchés.
+- Decision: 2026-10-28 — Chaque modification est représentée comme un nœud
+  de version relié au marché initial, sans être comptée comme un marché
+  initial supplémentaire.
+- Decision: 2026-10-28 — Utiliser OWL pour le modèle, SKOS pour les concepts
+  CPV et SHACL pour la validation ; l'export RDF est généré depuis Neo4j,
+  source de vérité opérationnelle.
+- Decision: 2026-10-28 — Le tracer bullet est uniquement synthétique ; il ne
+  charge ni ne publie de données DECP.
 - Decision: 2026-10-28 — Charger d'abord les attributions initiales, puis les
   modifications ; appliquer ensuite les validations, dérouler les requêtes de
   référence par groupes ordonnés, effectuer le refactor sweep et terminer par
   une vérification intégrée de bout en bout.
-- Open question: Comment représenter les versions de modification et les
-  marchés avec plusieurs titulaires dans le graphe ?
-- Open question: Quel mapping RDF, quelle sérialisation et quelles formes SHACL
-  mettent en œuvre le modèle approuvé par l'utilisateur ?
+- Open question: Quelles bibliothèques locales assurent la sérialisation RDF
+  et l'exécution SHACL avec les versions verrouillées du projet ?

@@ -8,8 +8,8 @@ par Git.
 
 ## Environnement et exécution
 
-Python 3.12.3 et DuckDB 2.0.0 sont déclarés dans `pyproject.toml` et verrouillés
-par `uv.lock`.
+Python 3.12.3, DuckDB 2.0.0, le pilote Neo4j 6.4.1, RDFLib 7.1.4 et PySHACL
+0.30.1 sont déclarés dans `pyproject.toml` et verrouillés par `uv.lock`.
 
 ```bash
 uv sync --locked
@@ -25,6 +25,32 @@ uv run --locked python src/marchegraph/entity_resolution/evaluate.py \
   --identities data/prepared/holder-identities.parquet \
   --output-dir data/prepared/holder-review
 ```
+
+## Démonstration locale du graphe
+
+Le tracer bullet utilise uniquement des données synthétiques : un acheteur,
+un marché `uid`, deux titulaires reliés au même marché et une modification
+représentée par un nœud de version. Il charge ce cas dans Neo4j, répond à la
+question de référence 1 avec ses références de preuve, valide le graphe RDF
+avec SHACL et écrit un export local. Il ne lit pas le snapshot DECP.
+
+Au premier démarrage, définissez un mot de passe local non partagé. Conservez
+la même valeur pour ce volume Neo4j ; changer seulement la variable
+d'environnement ne modifie pas les identifiants déjà initialisés. Démarrez
+Neo4j et lancez la démonstration :
+
+```bash
+export NEO4J_PASSWORD='choose-a-local-password'
+docker compose up -d --wait
+uv sync --locked
+PYTHONPATH=src uv run --locked python -m marchegraph.graph.demo
+```
+
+Neo4j et son port Bolt sont liés à `127.0.0.1`. `docker compose up -d --wait`
+peut être utilisé pour attendre la disponibilité complète. Le mot de passe est
+fourni par l'environnement et ne doit pas être enregistré dans le dépôt.
+L'export est écrit dans `data/prepared/graph-demo/graph-demo.ttl`, sous un
+chemin ignoré par Git.
 
 Le manifeste JSON indique le chemin source, son SHA-256, sa taille en octets,
 la date d'extraction (`null`, car inconnue) et les chemins des sorties. Le

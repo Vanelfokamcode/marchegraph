@@ -54,8 +54,10 @@ flowchart LR
 - **Rule:** Neo4j Community 5.26 LTS is the operational graph and the only
   mutable graph source of truth. Generate RDF exports from Neo4j using the
   ontology and mapping approved by the user; never maintain the export as a
-  second write path. The graph epic owns the mapping and repeatable validation
-  contract.
+  second write path. Model one canonical `Marche` per `uid` with multiple
+  titular relationships where applicable. Represent each modification as a
+  version node linked to the initial market; it is not an additional initial
+  market. The graph epic owns the mapping and repeatable validation contract.
 
 ### AD-3 — Evidence-bound, read-only application queries [ADOPTED]
 
@@ -193,10 +195,11 @@ marchegraph/
 ## Deferred
 
 - The user decides the ontology's concepts, relationships, and modeling
-  trade-offs, including modifications and awards with multiple holders; settle
-  these in the graph epic before fixing the graph-to-RDF mapping.
-- Select the exact RDF mapping and validation shapes with the user's approved
-  model; the architecture fixes only that RDF is generated from Neo4j.
+  trade-offs. The graph epic records the approved one-market/multiple-holder
+  and modification-version model; continue to obtain user approval for
+  remaining domain modeling choices.
+- OWL, SKOS for CPV and SHACL are the selected model and validation standards.
+  Complete the exact RDF mapping and validation shapes in the graph epic.
 - Select the RDF serialization and SHACL validation libraries when the graph
   epic refines its user-approved model.
 - Select and run a local language-model capability spike before choosing any
