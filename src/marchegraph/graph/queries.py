@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from decimal import Decimal, InvalidOperation
 from typing import Generic, TypeVar
 
 from neo4j import Session
@@ -21,11 +22,12 @@ class EvidenceReference:
 class QueryRow(Generic[T]):
     result: T
     evidence: tuple[EvidenceReference, ...]
+    evidence_complete: bool = True
 
 
 @dataclass(frozen=True)
 class QueryResponse(Generic[T]):
-    question_id: int
+    question_id: int | tuple[int, ...]
     rows: tuple[QueryRow[T], ...]
     limitations: tuple[str, ...] = ()
 
@@ -59,6 +61,42 @@ class MultiBuyerHolder:
     names: tuple[str, ...]
     buyer_ids: tuple[str, ...]
     market_count: int
+
+
+@dataclass(frozen=True)
+class CpvFamilyAggregate:
+    family_code: str
+    market_count: int
+    amount_total: Decimal
+    amount_market_count: int
+    amount_missing_value_market_count: int
+    amount_missing_source_market_count: int
+    amount_multivalued_market_count: int
+    mean_duration_months: Decimal | None
+    duration_market_count: int
+    duration_missing_value_market_count: int
+    duration_missing_source_market_count: int
+    duration_multivalued_market_count: int
+    multiple_cpv_market_count: int
+
+
+class GraphQueryDataError(ValueError):
+    pass
+
+
+MAX_AGGREGATE_EVIDENCE_MARKETS = 25
+
+AMOUNTS_AND_DURATIONS_QUERY = """
+MATCH (market:Marche {source_id: $source_id})
+WHERE market.annee = $year
+RETURN market.uid AS uid,
+       coalesce(market.codeCPV_values, []) AS cpv_values,
+       coalesce(market.montant_values, []) AS amount_values,
+       coalesce(market.dureeMois_values, []) AS duration_values,
+       coalesce(market.montant_missing_in_source, false) AS amount_missing,
+       coalesce(market.dureeMois_missing_in_source, false) AS duration_missing
+ORDER BY market.uid
+"""
 
 
 BUYER_RANKING_QUERY = """
@@ -162,6 +200,233 @@ def _market_evidence(
     return tuple(
         EvidenceReference(str(uid), predicate, object_id)
         for uid in sorted(set(market_uids))
+    )
+
+
+def _decimal_value(raw_value: object, *, uid: str, field_name: str) -> Decimal:
+    try:
+        value = Decimal(str(raw_value))
+    except (InvalidOperation, ValueError) as error:
+        raise GraphQueryDataError(
+            f"La valeur {field_name} du marché {uid} n'est pas numérique."
+        ) from error
+    if not value.is_finite():
+        raise GraphQueryDataError(
+            f"La valeur {field_name} du marché {uid} n'est pas finie."
+        )
+    return value
+
+
+def _cpv_family(value: object) -> str | None:
+    digits = "".join(character for character in str(value) if character.isdigit())
+    return digits[:3] if len(digits) >= 3 else None
+
+
+@dataclass
+class _CpvFamilyAccumulator:
+    market_count: int = 0
+    amount_total: Decimal = Decimal("0")
+    amount_market_count: int = 0
+    amount_missing_value_market_count: int = 0
+    amount_missing_source_market_count: int = 0
+    amount_multivalued_market_count: int = 0
+    duration_total: Decimal = Decimal("0")
+    duration_market_count: int = 0
+    duration_missing_value_market_count: int = 0
+    duration_missing_source_market_count: int = 0
+    duration_multivalued_market_count: int = 0
+    multiple_cpv_market_count: int = 0
+    amount_evidence: list[EvidenceReference] = field(default_factory=list)
+    duration_evidence: list[EvidenceReference] = field(default_factory=list)
+
+
+def aggregate_amounts_and_durations_by_cpv(
+    session: Session,
+    *,
+    year: int = 2025,
+) -> QueryResponse[CpvFamilyAggregate]:
+    records = session.run(
+        AMOUNTS_AND_DURATIONS_QUERY,
+        source_id=DATASET_ID,
+        year=year,
+    )
+    families: dict[str, _CpvFamilyAccumulator] = {}
+    unclassified_market_count = 0
+    unmapped_cpv_value_count = 0
+
+    for record in records:
+        uid = str(record["uid"])
+        cpv_values = tuple(sorted(set(record["cpv_values"] or ())))
+        family_values: dict[str, list[str]] = {}
+        for value in cpv_values:
+            family_code = _cpv_family(value)
+            if family_code is not None:
+                family_values.setdefault(family_code, []).append(str(value))
+        unmapped_cpv_value_count += len(cpv_values) - sum(
+            1 for value in cpv_values if _cpv_family(value) is not None
+        )
+        if not family_values:
+            unclassified_market_count += 1
+            continue
+
+        amount_values = tuple(record["amount_values"] or ())
+        duration_values = tuple(record["duration_values"] or ())
+        for family_code in sorted(family_values):
+            aggregate = families.setdefault(
+                family_code, _CpvFamilyAccumulator()
+            )
+            aggregate.market_count += 1
+            if len(cpv_values) > 1:
+                aggregate.multiple_cpv_market_count += 1
+            if record["amount_missing"]:
+                aggregate.amount_missing_source_market_count += 1
+            if record["duration_missing"]:
+                aggregate.duration_missing_source_market_count += 1
+
+            if not amount_values:
+                aggregate.amount_missing_value_market_count += 1
+            elif len(amount_values) > 1:
+                aggregate.amount_multivalued_market_count += 1
+            else:
+                amount = _decimal_value(
+                    amount_values[0], uid=uid, field_name="montant"
+                )
+                aggregate.amount_total += amount
+                aggregate.amount_market_count += 1
+                if (
+                    aggregate.amount_market_count
+                    <= MAX_AGGREGATE_EVIDENCE_MARKETS
+                ):
+                    aggregate.amount_evidence.extend(
+                        (
+                            EvidenceReference(
+                                uid,
+                                "codeCPV_values",
+                                family_values[family_code][0],
+                            ),
+                            EvidenceReference(
+                                uid, "montant_values", str(amount_values[0])
+                            ),
+                        )
+                    )
+
+            if not duration_values:
+                aggregate.duration_missing_value_market_count += 1
+            elif len(duration_values) > 1:
+                aggregate.duration_multivalued_market_count += 1
+            else:
+                duration = _decimal_value(
+                    duration_values[0], uid=uid, field_name="dureeMois"
+                )
+                aggregate.duration_total += duration
+                aggregate.duration_market_count += 1
+                if (
+                    aggregate.duration_market_count
+                    <= MAX_AGGREGATE_EVIDENCE_MARKETS
+                ):
+                    aggregate.duration_evidence.extend(
+                        (
+                            EvidenceReference(
+                                uid,
+                                "codeCPV_values",
+                                family_values[family_code][0],
+                            ),
+                            EvidenceReference(
+                                uid,
+                                "dureeMois_values",
+                                str(duration_values[0]),
+                            ),
+                        )
+                    )
+
+    rows: list[QueryRow[CpvFamilyAggregate]] = []
+    for family_code, aggregate in sorted(families.items()):
+        evidence = tuple(
+            (*aggregate.amount_evidence, *aggregate.duration_evidence)
+        )
+        evidence_complete = (
+            aggregate.amount_market_count <= MAX_AGGREGATE_EVIDENCE_MARKETS
+            and aggregate.duration_market_count
+            <= MAX_AGGREGATE_EVIDENCE_MARKETS
+        )
+        rows.append(
+            QueryRow(
+                result=CpvFamilyAggregate(
+                    family_code=family_code,
+                    market_count=aggregate.market_count,
+                    amount_total=aggregate.amount_total,
+                    amount_market_count=aggregate.amount_market_count,
+                    amount_missing_value_market_count=(
+                        aggregate.amount_missing_value_market_count
+                    ),
+                    amount_missing_source_market_count=(
+                        aggregate.amount_missing_source_market_count
+                    ),
+                    amount_multivalued_market_count=(
+                        aggregate.amount_multivalued_market_count
+                    ),
+                    mean_duration_months=(
+                        aggregate.duration_total
+                        / aggregate.duration_market_count
+                        if aggregate.duration_market_count
+                        else None
+                    ),
+                    duration_market_count=aggregate.duration_market_count,
+                    duration_missing_value_market_count=(
+                        aggregate.duration_missing_value_market_count
+                    ),
+                    duration_missing_source_market_count=(
+                        aggregate.duration_missing_source_market_count
+                    ),
+                    duration_multivalued_market_count=(
+                        aggregate.duration_multivalued_market_count
+                    ),
+                    multiple_cpv_market_count=(
+                        aggregate.multiple_cpv_market_count
+                    ),
+                ),
+                evidence=evidence,
+                evidence_complete=evidence_complete,
+            )
+        )
+
+    limitations = [
+        "Les montants sont des montants déclarés, pas des paiements ni "
+        "l'exécution financière ; un montant d'accord-cadre peut représenter "
+        "un plafond.",
+        "Les marchés à montant unique sont comptés une fois, même si des "
+        "lignes source n'ont pas de montant ; leurs absences sont signalées. "
+        "Les montants multivalués sont exclus du total.",
+        "Les durées à valeur unique sont comptées une fois, même si des "
+        "lignes source sont sans durée ; les durées multivaluées sont exclues "
+        "de la moyenne et rapportées séparément.",
+    ]
+    if unclassified_market_count:
+        limitations.append(
+            f"{unclassified_market_count} marché(s) sans code CPV exploitable "
+            "ne peuvent être rattachés à une famille."
+        )
+    if unmapped_cpv_value_count:
+        limitations.append(
+            f"{unmapped_cpv_value_count} valeur(s) CPV n'ont pas assez de "
+            "chiffres pour déterminer une famille."
+        )
+    if any(row.result.multiple_cpv_market_count for row in rows):
+        limitations.append(
+            "Les marchés rattachés à plusieurs familles CPV sont comptés une "
+            "fois dans chaque famille concernée ; les totaux de familles ne "
+            "sont donc pas nécessairement additifs."
+        )
+    if any(not row.evidence_complete for row in rows):
+        limitations.append(
+            "Les preuves détaillées sont limitées aux 25 premiers marchés "
+            "par famille et par mesure ; les agrégats utilisent tous les "
+            "marchés admissibles."
+        )
+    return QueryResponse(
+        question_id=(3, 8),
+        rows=tuple(rows),
+        limitations=tuple(limitations),
     )
 
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 import unittest
+from decimal import Decimal
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
@@ -172,6 +173,131 @@ class GraphQueryTests(unittest.TestCase):
     def test_query_limits_must_be_positive(self):
         with self.assertRaises(ValueError):
             queries.rank_buyers(FakeSession({}), limit=0)
+
+    def test_cpv_aggregates_count_markets_once_and_report_ambiguous_values(self):
+        markets = [
+            {
+                "uid": "uid-single-with-missing-line",
+                "cpv_values": ["45233140"],
+                "amount_values": ["100.10"],
+                "duration_values": [12],
+                "amount_missing": True,
+                "duration_missing": True,
+            },
+            {
+                "uid": "uid-multi-holder",
+                "holder_ids": ["holder-a", "holder-b"],
+                "cpv_values": ["45233140"],
+                "amount_values": ["200.00"],
+                "duration_values": [24],
+                "amount_missing": False,
+                "duration_missing": False,
+            },
+            {
+                "uid": "uid-multivalued-amount",
+                "cpv_values": ["45233140"],
+                "amount_values": ["10.00", "20.00"],
+                "duration_values": [6],
+                "amount_missing": False,
+                "duration_missing": False,
+            },
+            {
+                "uid": "uid-no-amount-or-duration",
+                "cpv_values": ["45233140"],
+                "amount_values": [],
+                "duration_values": [],
+                "amount_missing": True,
+                "duration_missing": True,
+            },
+            {
+                "uid": "uid-multivalued-duration",
+                "cpv_values": ["45233140"],
+                "amount_values": ["50.00"],
+                "duration_values": [12, 18],
+                "amount_missing": False,
+                "duration_missing": False,
+            },
+            {
+                "uid": "uid-two-cpv-families",
+                "cpv_values": ["45233140", "30000000"],
+                "amount_values": ["75.00"],
+                "duration_values": [30],
+                "amount_missing": False,
+                "duration_missing": False,
+            },
+        ]
+        session = FakeSession({queries.AMOUNTS_AND_DURATIONS_QUERY: markets})
+
+        response = queries.aggregate_amounts_and_durations_by_cpv(session)
+
+        self.assertEqual(response.question_id, (3, 8))
+        by_family = {row.result.family_code: row for row in response.rows}
+        construction = by_family["452"].result
+        self.assertEqual(construction.market_count, 6)
+        self.assertEqual(construction.amount_total, Decimal("425.10"))
+        self.assertEqual(construction.amount_market_count, 4)
+        self.assertEqual(construction.amount_missing_value_market_count, 1)
+        self.assertEqual(construction.amount_missing_source_market_count, 2)
+        self.assertEqual(construction.amount_multivalued_market_count, 1)
+        self.assertEqual(construction.mean_duration_months, Decimal("18"))
+        self.assertEqual(construction.duration_market_count, 4)
+        self.assertEqual(construction.duration_missing_value_market_count, 1)
+        self.assertEqual(construction.duration_missing_source_market_count, 2)
+        self.assertEqual(construction.duration_multivalued_market_count, 1)
+        self.assertEqual(construction.multiple_cpv_market_count, 1)
+        self.assertEqual(by_family["300"].result.amount_total, Decimal("75.00"))
+        self.assertTrue(by_family["300"].evidence_complete)
+        self.assertEqual(len(markets[1]["holder_ids"]), 2)
+        self.assertNotIn("A_TITULAIRE", queries.AMOUNTS_AND_DURATIONS_QUERY)
+        self.assertIn("accord-cadre", " ".join(response.limitations))
+        self.assertIn("plusieurs familles CPV", " ".join(response.limitations))
+
+    def test_cpv_aggregates_bound_evidence_without_truncating_the_totals(self):
+        markets = [
+            {
+                "uid": f"uid-{index:02}",
+                "cpv_values": ["45233140"],
+                "amount_values": ["1.00"],
+                "duration_values": [1],
+                "amount_missing": False,
+                "duration_missing": False,
+            }
+            for index in range(
+                queries.MAX_AGGREGATE_EVIDENCE_MARKETS + 1
+            )
+        ]
+        session = FakeSession({queries.AMOUNTS_AND_DURATIONS_QUERY: markets})
+
+        response = queries.aggregate_amounts_and_durations_by_cpv(session)
+
+        row = response.rows[0]
+        self.assertEqual(row.result.market_count, 26)
+        self.assertEqual(row.result.amount_total, Decimal("26.00"))
+        self.assertFalse(row.evidence_complete)
+        self.assertEqual(len(row.evidence), 100)
+        self.assertIn("preuves détaillées", " ".join(response.limitations))
+
+    def test_cpv_aggregates_reject_non_numeric_source_values(self):
+        session = FakeSession(
+            {
+                queries.AMOUNTS_AND_DURATIONS_QUERY: [
+                    {
+                        "uid": "uid-invalid-amount",
+                        "cpv_values": ["45233140"],
+                        "amount_values": ["not-a-number"],
+                        "duration_values": [1],
+                        "amount_missing": False,
+                        "duration_missing": False,
+                    }
+                ]
+            }
+        )
+
+        with self.assertRaisesRegex(
+            queries.GraphQueryDataError,
+            "montant du marché uid-invalid-amount n'est pas numérique",
+        ):
+            queries.aggregate_amounts_and_durations_by_cpv(session)
 
 
 if __name__ == "__main__":

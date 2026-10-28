@@ -104,8 +104,8 @@ ignoré par Git, comme les autres sorties dérivées.
 ### Questions de référence sur les acheteurs et titulaires
 
 Le module `marchegraph.graph.queries` expose un contrat commun :
-chaque réponse porte son numéro de question, ses résultats structurés, les
-références aux marchés et relations qui les étayent, ainsi que les limites
+chaque réponse porte son ou ses numéros de question, ses résultats structurés,
+les références aux marchés et relations qui les étayent, ainsi que les limites
 connues. Les requêtes sont en lecture seule et paramétrées. Exemple sur le
 graphe des attributions initiales chargé localement dans Neo4j :
 
@@ -136,6 +136,23 @@ valeurs multivaluées. Les nombres de valeurs absentes et multiples sont inclus
 dans les limites de cette réponse. Les classements des questions 1, 2 et 6
 retournent les dix premiers résultats par défaut ; le paramètre `limit` permet
 de choisir une autre limite, reportée dans les limites de la réponse.
+
+La même API couvre les questions 3 et 8 :
+
+```python
+from marchegraph.graph.queries import aggregate_amounts_and_durations_by_cpv
+
+amounts_and_durations = aggregate_amounts_and_durations_by_cpv(session, year=2025)
+```
+
+Le résultat regroupe par groupe CPV (les trois premiers chiffres). Les montants
+sont additionnés en `Decimal` ; un marché à montant ou durée unique compte une
+fois même si d'autres lignes source sont manquantes. Les valeurs distinctes
+multiples sont exclues de l'agrégat correspondant et rapportées séparément.
+Chaque famille fournit les comptes et les preuves, avec au plus 25 marchés de
+preuve par mesure ; `evidence_complete` indique si l'échantillon est complet.
+Les montants restent des montants déclarés, pas des paiements ; un montant
+d'accord-cadre peut représenter un plafond.
 
 Le manifeste JSON indique le chemin source, son SHA-256, sa taille en octets,
 la date d'extraction (`null`, car inconnue) et les chemins des sorties. Le

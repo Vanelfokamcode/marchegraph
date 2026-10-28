@@ -150,6 +150,11 @@ les réponses de référence sont répétables et explicables.
   par nature et par procédure. Ne pas reconstruire de paires nature–procédure
   quand les valeurs agrégées par `uid` ne préservent pas leur association
   source ligne par ligne ; exposer le nombre de valeurs absentes et multiples.
+- Decision: 2026-10-28 — Pour les questions 3 et 8, une famille CPV correspond
+  au groupe formé par les trois premiers chiffres du code. Exclure les marchés
+  aux montants ou durées distincts multiples de l'agrégat correspondant et
+  rapporter leur nombre ; compter une valeur unique une fois même si d'autres
+  lignes source sont sans valeur, en signalant ces manques.
 - Source conflict: 2026-10-28 — Parmi les modifications notifiées en 2024–2025,
   83 500 `uid` distincts (65 953 en 2024 et 37 109 en 2025) n'ont aucune
   attribution initiale dans le Parquet préparé. Cela concerne 182 283 couples
