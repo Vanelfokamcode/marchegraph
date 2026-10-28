@@ -1,7 +1,7 @@
 ---
 title: "Interroger montants et durées par CPV"
 ticket: 6
-status: built
+status: done
 ---
 
 # Agrégations par famille CPV avec limites et preuves
