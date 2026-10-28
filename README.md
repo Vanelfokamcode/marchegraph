@@ -52,6 +52,22 @@ fourni par l'environnement et ne doit pas être enregistré dans le dépôt.
 L'export est écrit dans `data/prepared/graph-demo/graph-demo.ttl`, sous un
 chemin ignoré par Git.
 
+### Import réel des attributions initiales
+
+Après la préparation des identités titulaires, le chargeur importe localement
+les attributions initiales 2024 et 2025 depuis les deux Parquet préparés :
+
+```bash
+PYTHONPATH=src uv run --locked python -m marchegraph.graph.load_initial_awards
+```
+
+Le chargeur conserve un seul marché par `uid`, relie les titulaires dont
+l'identité typée est résolue et conserve les valeurs distinctes des attributs
+qui varient entre lignes. Les valeurs manquantes sont signalées séparément ;
+aucune identité non résolue ne crée de lien titulaire. Les lots sont idempotents
+et la commande vérifie les comptes annuels de marchés, titulaires résolus et
+liens contre les Parquet. Elle n'affiche que ces comptes agrégés.
+
 Le manifeste JSON indique le chemin source, son SHA-256, sa taille en octets,
 la date d'extraction (`null`, car inconnue) et les chemins des sorties. Le
 rapport de qualité distingue les lignes et les `uid` distincts des attributions

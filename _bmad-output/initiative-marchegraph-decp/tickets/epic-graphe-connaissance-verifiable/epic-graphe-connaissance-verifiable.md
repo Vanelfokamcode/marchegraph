@@ -125,3 +125,20 @@ les réponses de référence sont répétables et explicables.
   une vérification intégrée de bout en bout.
 - Open question: Quelles bibliothèques locales assurent la sérialisation RDF
   et l'exécution SHACL avec les versions verrouillées du projet ?
+- Source conflict: 2026-10-28 — Le Parquet initial contient plusieurs valeurs
+  non nulles pour un même `uid` sur `objet` (5 734 marchés), `montant` (564),
+  `procedure` (32), `dureeMois` (127) et `nature` (3). Pour `montant`, 17
+  autres marchés ont à la fois une valeur et une valeur manquante ; pour
+  `dureeMois`, 23. Le compte de marchés par `uid` reste univoque, mais une
+  propriété scalaire unique ferait perdre des valeurs source ou en choisirait
+  une arbitrairement.
+- Decision: 2026-10-28 — L'utilisateur approuve un `Marche` par `uid` avec
+  toutes les valeurs distinctes de `objet`, `montant`, `procedure`, `dureeMois`
+  et `nature` conservées comme valeurs multiples ; la présence de lignes source
+  sans valeur est signalée séparément. Une requête ne doit pas agréger
+  silencieusement les montants multi-valués.
+- Decision: 2026-10-28 — Pour les agrégations de montants, inclure une fois les
+  marchés avec une seule valeur distincte, même si d'autres lignes sont sans
+  montant en signalant ces absences ; exclure les marchés multi-valués du total
+  et en rapporter le nombre. La story 3.5 établit le contrat commun de requête
+  et de preuve que la story 3.6 réutilise.
