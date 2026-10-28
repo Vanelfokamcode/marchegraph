@@ -142,6 +142,14 @@ les réponses de référence sont répétables et explicables.
   montant en signalant ces absences ; exclure les marchés multi-valués du total
   et en rapporter le nombre. La story 3.5 établit le contrat commun de requête
   et de preuve que la story 3.6 réutilise.
+- Decision: 2026-10-28 — Pour la question 1, classer les acheteurs de 2025 au
+  niveau national ; le graphe préparé ne contient pas la région de l'acheteur,
+  cette limite doit donc être signalée plutôt que de prétendre filtrer par
+  territoire.
+- Decision: 2026-10-28 — Pour la question 5, présenter séparément les comptes
+  par nature et par procédure. Ne pas reconstruire de paires nature–procédure
+  quand les valeurs agrégées par `uid` ne préservent pas leur association
+  source ligne par ligne ; exposer le nombre de valeurs absentes et multiples.
 - Source conflict: 2026-10-28 — Parmi les modifications notifiées en 2024–2025,
   83 500 `uid` distincts (65 953 en 2024 et 37 109 en 2025) n'ont aucune
   attribution initiale dans le Parquet préparé. Cela concerne 182 283 couples

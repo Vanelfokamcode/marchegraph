@@ -101,6 +101,42 @@ Les identifiants `MG-VAL-*` définis dans `docs/exemple/formes.ttl` sont
 retournés avec chaque motif. Le fichier de rejets est local et doit rester
 ignoré par Git, comme les autres sorties dérivées.
 
+### Questions de référence sur les acheteurs et titulaires
+
+Le module `marchegraph.graph.queries` expose un contrat commun :
+chaque réponse porte son numéro de question, ses résultats structurés, les
+références aux marchés et relations qui les étayent, ainsi que les limites
+connues. Les requêtes sont en lecture seule et paramétrées. Exemple sur le
+graphe des attributions initiales chargé localement dans Neo4j :
+
+```python
+from neo4j import GraphDatabase
+
+from marchegraph.graph.queries import (
+    find_holders_with_multiple_buyers,
+    rank_buyers,
+    rank_holders_for_buyer,
+    summarize_nature_and_procedures,
+)
+
+with GraphDatabase.driver(uri, auth=(username, password)) as driver:
+    with driver.session() as session:
+        buyers = rank_buyers(session, year=2025)
+        recurrent_holders = rank_holders_for_buyer(session, "buyer-id", year=2025)
+        procedures = summarize_nature_and_procedures(session, year=2025)
+        multi_buyer_holders = find_holders_with_multiple_buyers(session, year=2025)
+```
+
+Les `rows` contiennent les objets `result` et leurs `evidence` ; chaque preuve
+identifie un `uid`, le lien ou la propriété interrogée et sa valeur. La question
+1 classe les acheteurs sur l'année demandée, mais pas par région : la région de
+l'acheteur n'est pas chargée. La question 5 fournit des décomptes distincts par
+nature et par procédure, sans fabriquer de paires nature–procédure à partir de
+valeurs multivaluées. Les nombres de valeurs absentes et multiples sont inclus
+dans les limites de cette réponse. Les classements des questions 1, 2 et 6
+retournent les dix premiers résultats par défaut ; le paramètre `limit` permet
+de choisir une autre limite, reportée dans les limites de la réponse.
+
 Le manifeste JSON indique le chemin source, son SHA-256, sa taille en octets,
 la date d'extraction (`null`, car inconnue) et les chemins des sorties. Le
 rapport de qualité distingue les lignes et les `uid` distincts des attributions

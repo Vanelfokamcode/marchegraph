@@ -1,7 +1,7 @@
 ---
 title: "Valider les données du graphe et tracer les rejets"
 ticket: 4
-status: built
+status: done
 ---
 
 # Validation locale et traçabilité des rejets
