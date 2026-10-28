@@ -48,15 +48,19 @@ class GraphQueryTests(unittest.TestCase):
         self.assertEqual(
             response.rows[0].evidence,
             (
-                queries.EvidenceReference("uid-1", "A_ACHETEUR", "buyer-1"),
-                queries.EvidenceReference("uid-2", "A_ACHETEUR", "buyer-1"),
+                queries.EvidenceReference(
+                    "Marche", "uid-1", "A_ACHETEUR", "buyer-1"
+                ),
+                queries.EvidenceReference(
+                    "Marche", "uid-2", "A_ACHETEUR", "buyer-1"
+                ),
             ),
         )
         self.assertEqual(
             session.calls[0][1],
             {"source_id": "decp-initial-2024-2025", "year": 2025, "limit": 5},
         )
-        self.assertIn("région", response.limitations[0])
+        self.assertIn("national", response.limitations[0])
 
     def test_recurring_holders_are_scoped_to_the_requested_buyer(self):
         session = FakeSession(
@@ -298,6 +302,186 @@ class GraphQueryTests(unittest.TestCase):
             "montant du marché uid-invalid-amount n'est pas numérique",
         ):
             queries.aggregate_amounts_and_durations_by_cpv(session)
+
+    def test_modification_history_counts_unlinked_versions_without_fake_markets(self):
+        session = FakeSession(
+            {
+                queries.MODIFICATION_HISTORY_SUMMARY_QUERY: [
+                    {
+                        "modified_market_count": 1,
+                        "total_version_count": 3,
+                        "linked_version_count": 2,
+                        "unlinked_version_count": 1,
+                    }
+                ],
+                queries.MODIFIED_MARKETS_QUERY: [
+                    {"uid": "uid-linked", "modification_ids": [2, 1]}
+                ],
+                queries.UNLINKED_MODIFICATIONS_QUERY: [
+                    {"uid": "uid-orphan", "modification_id": 3}
+                ],
+            }
+        )
+
+        response = queries.summarize_modification_history(session)
+
+        self.assertEqual(response.question_id, 4)
+        history = response.rows[0].result
+        self.assertEqual(history.modified_market_count, 1)
+        self.assertEqual(history.total_version_count, 3)
+        self.assertEqual(history.unlinked_version_count, 1)
+        self.assertEqual(history.modified_markets[0].modification_ids, (1, 2))
+        self.assertEqual(history.unlinked_samples[0].uid, "uid-orphan")
+        self.assertEqual(
+            {
+                (proof.node_type, proof.predicate, proof.object_id)
+                for proof in response.rows[0].evidence
+            },
+            {
+                ("Marche", "HAS_MODIFICATION", "1"),
+                ("Marche", "HAS_MODIFICATION", "2"),
+                (
+                    "Modification",
+                    "initial_market_status",
+                    "missing_from_snapshot",
+                ),
+            },
+        )
+        self.assertIn("sans créer de marché fictif", response.limitations[1])
+
+    def test_theme_search_requires_unique_region_and_returns_evidence(self):
+        session = FakeSession(
+            {
+                queries.THEME_REGION_SUMMARY_QUERY: [
+                    {
+                        "theme_market_count": 5,
+                        "missing_region_count": 1,
+                        "multivalued_region_count": 1,
+                        "matching_region_market_count": 2,
+                    }
+                ],
+                queries.THEME_REGION_MARKETS_QUERY: [
+                    {
+                        "uid": "uid-theme",
+                        "region_code": "11",
+                        "matching_objects": ["Travaux de voirie"],
+                    }
+                ],
+            }
+        )
+
+        response = queries.find_theme_in_buyer_region(
+            session, "voirie", "11", year=2025, limit=1
+        )
+
+        self.assertEqual(response.question_id, 7)
+        self.assertEqual(response.rows[0].result.uid, "uid-theme")
+        self.assertFalse(response.rows[0].evidence_complete)
+        self.assertEqual(response.rows[0].result.region_code, "11")
+        self.assertEqual(
+            {proof.predicate for proof in response.rows[0].evidence},
+            {"objet_values", "acheteur_region_code_values"},
+        )
+        self.assertEqual(
+            dict(response.metadata),
+            {
+                "theme_market_count": 5,
+                "missing_region_count": 1,
+                "multivalued_region_count": 1,
+                "matching_region_market_count": 2,
+            },
+        )
+        self.assertEqual(session.calls[0][1]["theme"], "voirie")
+        self.assertEqual(session.calls[1][1]["region"], "11")
+        self.assertEqual(session.calls[1][1]["limit"], 1)
+        self.assertTrue(
+            any("premiers marchés" in text for text in response.limitations)
+        )
+
+    def test_theme_search_rejects_empty_theme_or_region(self):
+        session = FakeSession({})
+        with self.assertRaises(ValueError):
+            queries.find_theme_in_buyer_region(session, " ", "11")
+        with self.assertRaises(ValueError):
+            queries.find_theme_in_buyer_region(session, "travaux", " ")
+
+    def test_holder_name_variants_remain_scoped_to_resolved_typed_identity(self):
+        session = FakeSession(
+            {
+                queries.HOLDER_NAME_VARIANTS_QUERY: [
+                    {
+                        "identifier_type": "SIRET",
+                        "identifier_value": "00000000000001",
+                        "names": ["Entreprise A", "Entreprise A SAS"],
+                        "market_uids": ["uid-1", "uid-2"],
+                    }
+                ],
+                queries.HOLDER_NAME_VARIANTS_COUNT_QUERY: [
+                    {"holder_count": 1}
+                ],
+            }
+        )
+
+        response = queries.find_holder_name_variants(session)
+
+        self.assertEqual(response.question_id, 9)
+        variant = response.rows[0].result
+        self.assertEqual(variant.names, ("Entreprise A", "Entreprise A SAS"))
+        self.assertEqual(variant.market_count, 2)
+        self.assertEqual(
+            dict(response.metadata),
+            {"variant_holder_count": 1},
+        )
+        self.assertEqual(
+            {
+                (proof.node_type, proof.predicate)
+                for proof in response.rows[0].evidence
+            },
+            {
+                ("Titulaire", "nom_values"),
+                ("Marche", "A_TITULAIRE"),
+            },
+        )
+        self.assertIn("les noms seuls ne fusionnent", response.limitations[0])
+
+    def test_holder_name_variants_handles_zero_matches(self):
+        session = FakeSession(
+            {
+                queries.HOLDER_NAME_VARIANTS_COUNT_QUERY: [{"holder_count": 0}],
+                queries.HOLDER_NAME_VARIANTS_QUERY: [],
+            }
+        )
+
+        response = queries.find_holder_name_variants(session)
+
+        self.assertEqual(response.rows, ())
+        self.assertEqual(dict(response.metadata), {"variant_holder_count": 0})
+        self.assertIn("Aucun titulaire", response.limitations[-1])
+
+    def test_data_quality_issues_return_counts_and_bounded_proof_samples(self):
+        session = FakeSession(
+            {
+                queries.DATA_QUALITY_ISSUES_QUERY: [
+                    {
+                        "node_type": "Marche",
+                        "issue": "montant:multiple",
+                        "affected_record_count": 30,
+                        "sample_node_ids": [
+                            f"uid-{index:02}" for index in range(25)
+                        ],
+                    }
+                ]
+            }
+        )
+
+        response = queries.summarize_graph_data_issues(session)
+
+        self.assertEqual(response.question_id, 10)
+        self.assertEqual(response.rows[0].result.affected_record_count, 30)
+        self.assertFalse(response.rows[0].evidence_complete)
+        self.assertEqual(len(response.rows[0].evidence), 25)
+        self.assertEqual(response.rows[0].evidence[0].node_type, "Marche")
+        self.assertIn("pas une erreur", response.limitations[0])
 
 
 if __name__ == "__main__":

@@ -128,12 +128,12 @@ with GraphDatabase.driver(uri, auth=(username, password)) as driver:
 ```
 
 Les `rows` contiennent les objets `result` et leurs `evidence` ; chaque preuve
-identifie un `uid`, le lien ou la propriété interrogée et sa valeur. La question
-1 classe les acheteurs sur l'année demandée, mais pas par région : la région de
-l'acheteur n'est pas chargée. La question 5 fournit des décomptes distincts par
-nature et par procédure, sans fabriquer de paires nature–procédure à partir de
-valeurs multivaluées. Les nombres de valeurs absentes et multiples sont inclus
-dans les limites de cette réponse. Les classements des questions 1, 2 et 6
+identifie le type de nœud, son identifiant, le lien ou la propriété interrogée
+et sa valeur. La question 1 classe les acheteurs au niveau national. La
+question 5 fournit des décomptes distincts par nature et par procédure, sans
+fabriquer de paires nature–procédure à partir de valeurs multivaluées. Les
+nombres de valeurs absentes et multiples sont inclus dans les limites de cette
+réponse. Les classements des questions 1, 2 et 6
 retournent les dix premiers résultats par défaut ; le paramètre `limit` permet
 de choisir une autre limite, reportée dans les limites de la réponse.
 
@@ -153,6 +153,35 @@ Chaque famille fournit les comptes et les preuves, avec au plus 25 marchés de
 preuve par mesure ; `evidence_complete` indique si l'échantillon est complet.
 Les montants restent des montants déclarés, pas des paiements ; un montant
 d'accord-cadre peut représenter un plafond.
+
+Les questions 4, 7, 9 et 10 réutilisent le même contrat :
+
+```python
+from marchegraph.graph.queries import (
+    find_holder_name_variants,
+    find_theme_in_buyer_region,
+    summarize_graph_data_issues,
+    summarize_modification_history,
+)
+
+history = summarize_modification_history(session, year=2025)
+themed_markets = find_theme_in_buyer_region(
+    session, theme="voirie", region_code="11", year=2025
+)
+name_variants = find_holder_name_variants(session)
+data_issues = summarize_graph_data_issues(session)
+```
+
+Le chargement initial conserve maintenant les codes régionaux acheteur par
+marché et les marqueurs de valeurs manquantes. La recherche thématique utilise
+une sous-chaîne insensible à la casse dans l'objet et ne rattache un marché à
+une région que si une seule région source est disponible. L'historique sépare
+les versions reliées des versions sans marché initial ; la recherche de
+variantes de titulaires utilise uniquement les identifiants typés déjà
+résolus, jamais le nom seul. Le rapport de données distingue les champs absents
+des champs multivalués ; ces derniers sont signalés sans être automatiquement
+qualifiés d'erreurs. Les listes de preuves sont échantillonnées lorsque le
+volume est important, et chaque ligne indique si l'échantillon est complet.
 
 Le manifeste JSON indique le chemin source, son SHA-256, sa taille en octets,
 la date d'extraction (`null`, car inconnue) et les chemins des sorties. Le

@@ -34,6 +34,7 @@ SOURCE_COLUMNS = {
     "nature",
     "acheteur_id",
     "acheteur_nom",
+    "acheteur_region_code",
     "titulaire_id",
     "titulaire_typeIdentifiant",
     "titulaire_nom",
@@ -60,6 +61,7 @@ MARKET_VALUE_FIELDS = (
     "procedure_values",
     "dureeMois_values",
     "objet_values",
+    "acheteur_region_code_values",
 )
 MARKET_MISSING_FIELDS = tuple(
     f"{field.removesuffix('_values')}_missing_in_source"
@@ -130,6 +132,9 @@ MERGE (market:Marche {uid: row.uid})
 SET market.source_id = $source_id,
     market.annee = row.annee,
     market.acheteur_id = row.acheteur_id,
+    market.acheteur_region_code_values = row.acheteur_region_code_values,
+    market.acheteur_region_code_missing_in_source =
+        row.acheteur_region_code_missing_in_source,
     market.type_values = row.type_values,
     market.type_missing_in_source = row.type_missing_in_source,
     market.codeCPV_values = row.codeCPV_values,
@@ -429,6 +434,11 @@ SELECT
     uid,
     year(dateNotification) AS annee,
     min(acheteur_id) AS acheteur_id,
+    list(DISTINCT acheteur_region_code ORDER BY acheteur_region_code)
+        FILTER (WHERE acheteur_region_code IS NOT NULL)
+        AS acheteur_region_code_values,
+    bool_or(acheteur_region_code IS NULL)
+        AS acheteur_region_code_missing_in_source,
     list(DISTINCT type ORDER BY type)
         FILTER (WHERE type IS NOT NULL) AS type_values,
     bool_or(type IS NULL) AS type_missing_in_source,

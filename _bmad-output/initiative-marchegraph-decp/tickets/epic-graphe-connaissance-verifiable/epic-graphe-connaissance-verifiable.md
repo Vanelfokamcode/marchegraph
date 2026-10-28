@@ -143,9 +143,9 @@ les réponses de référence sont répétables et explicables.
   et en rapporter le nombre. La story 3.5 établit le contrat commun de requête
   et de preuve que la story 3.6 réutilise.
 - Decision: 2026-10-28 — Pour la question 1, classer les acheteurs de 2025 au
-  niveau national ; le graphe préparé ne contient pas la région de l'acheteur,
-  cette limite doit donc être signalée plutôt que de prétendre filtrer par
-  territoire.
+  niveau national, sans filtre régional, conformément au périmètre retenu.
+  La story 3.7 charge la région au niveau du marché pour la question 7, sans
+  modifier le périmètre national de cette question.
 - Decision: 2026-10-28 — Pour la question 5, présenter séparément les comptes
   par nature et par procédure. Ne pas reconstruire de paires nature–procédure
   quand les valeurs agrégées par `uid` ne préservent pas leur association

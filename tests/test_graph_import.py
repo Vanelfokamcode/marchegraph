@@ -43,6 +43,7 @@ class InitialAwardImportTests(unittest.TestCase):
                 nature VARCHAR,
                 acheteur_id VARCHAR,
                 acheteur_nom VARCHAR,
+                acheteur_region_code VARCHAR,
                 titulaire_id VARCHAR,
                 titulaire_typeIdentifiant VARCHAR,
                 titulaire_nom VARCHAR,
@@ -58,13 +59,14 @@ class InitialAwardImportTests(unittest.TestCase):
             """
         )
         connection.executemany(
-            "INSERT INTO decp VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO decp VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 (
                     "000-market-2024",
                     "Travaux",
                     "000-buyer",
                     "Acheteur de test",
+                    "11",
                     "00000000000001",
                     "siret",
                     "Titulaire A",
@@ -82,6 +84,7 @@ class InitialAwardImportTests(unittest.TestCase):
                     "Services",
                     "000-buyer",
                     "Acheteur de test",
+                    "11",
                     "00000000000001",
                     "SIRET",
                     "Titulaire A",
@@ -99,6 +102,7 @@ class InitialAwardImportTests(unittest.TestCase):
                     None,
                     "000-buyer",
                     "Acheteur de test",
+                    None,
                     "00000000000001",
                     "SIRET",
                     "Titulaire A",
@@ -116,6 +120,7 @@ class InitialAwardImportTests(unittest.TestCase):
                     "Travaux",
                     "000-buyer",
                     "Acheteur de test",
+                    "11",
                     None,
                     None,
                     None,
@@ -133,6 +138,7 @@ class InitialAwardImportTests(unittest.TestCase):
                     "Fournitures",
                     "buyer-2025",
                     "Acheteur 2025",
+                    "84",
                     "00000000000002",
                     "SIRET",
                     "Titulaire B",
@@ -150,6 +156,7 @@ class InitialAwardImportTests(unittest.TestCase):
                     "Travaux",
                     "buyer-2025",
                     "Acheteur 2025",
+                    "84",
                     "00000000000003",
                     "SIRET",
                     "Titulaire C",
@@ -204,6 +211,7 @@ class InitialAwardImportTests(unittest.TestCase):
 
         self.assertEqual(first_market["uid"], "000-market-2024")
         self.assertEqual(first_market["acheteur_id"], "000-buyer")
+        self.assertEqual(first_market["acheteur_region_code_values"], ["11"])
         self.assertEqual(first_market["nature_values"], ["Services", "Travaux"])
         self.assertEqual(first_market["montant_values"], ["100.0", "250.0"])
         self.assertEqual(
@@ -217,6 +225,9 @@ class InitialAwardImportTests(unittest.TestCase):
         self.assertTrue(first_market["procedure_missing_in_source"])
         self.assertTrue(first_market["dureeMois_missing_in_source"])
         self.assertTrue(first_market["objet_missing_in_source"])
+        self.assertTrue(
+            first_market["acheteur_region_code_missing_in_source"]
+        )
 
     def test_annual_source_counts_exclude_modifications_and_unresolved_holders(
         self,

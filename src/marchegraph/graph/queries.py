@@ -13,7 +13,8 @@ T = TypeVar("T")
 
 @dataclass(frozen=True)
 class EvidenceReference:
-    market_uid: str
+    node_type: str
+    node_id: str
     predicate: str
     object_id: str
 
@@ -30,6 +31,7 @@ class QueryResponse(Generic[T]):
     question_id: int | tuple[int, ...]
     rows: tuple[QueryRow[T], ...]
     limitations: tuple[str, ...] = ()
+    metadata: tuple[tuple[str, int], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -80,6 +82,51 @@ class CpvFamilyAggregate:
     multiple_cpv_market_count: int
 
 
+@dataclass(frozen=True)
+class ModifiedMarketCount:
+    uid: str
+    modification_ids: tuple[int, ...]
+
+
+@dataclass(frozen=True)
+class UnlinkedModification:
+    uid: str
+    modification_id: int
+
+
+@dataclass(frozen=True)
+class ModificationHistorySummary:
+    year: int
+    modified_market_count: int
+    total_version_count: int
+    linked_version_count: int
+    unlinked_version_count: int
+    modified_markets: tuple[ModifiedMarketCount, ...]
+    unlinked_samples: tuple[UnlinkedModification, ...]
+
+
+@dataclass(frozen=True)
+class ThemedMarket:
+    uid: str
+    region_code: str
+    matching_objects: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class HolderNameVariants:
+    identifier_type: str
+    identifier_value: str
+    names: tuple[str, ...]
+    market_count: int
+
+
+@dataclass(frozen=True)
+class DataQualityIssue:
+    node_type: str
+    issue_code: str
+    affected_record_count: int
+
+
 class GraphQueryDataError(ValueError):
     pass
 
@@ -96,6 +143,195 @@ RETURN market.uid AS uid,
        coalesce(market.montant_missing_in_source, false) AS amount_missing,
        coalesce(market.dureeMois_missing_in_source, false) AS duration_missing
 ORDER BY market.uid
+"""
+
+MODIFICATION_HISTORY_SUMMARY_QUERY = """
+OPTIONAL MATCH (version:Modification {source_id: $source_id})
+WHERE version.annee = $year
+OPTIONAL MATCH (version)-[:MODIFICATION_DE]->
+               (market:Marche {source_id: $source_id})
+RETURN count(DISTINCT version) AS total_version_count,
+       count(DISTINCT CASE WHEN market IS NOT NULL THEN version END)
+         AS linked_version_count,
+       count(DISTINCT CASE WHEN version IS NOT NULL AND market IS NULL
+                           THEN version END) AS unlinked_version_count,
+       count(DISTINCT market.uid) AS modified_market_count
+"""
+
+MODIFIED_MARKETS_QUERY = """
+MATCH (version:Modification {source_id: $source_id})-[:MODIFICATION_DE]->
+      (market:Marche {source_id: $source_id})
+WHERE version.annee = $year
+WITH market, collect(DISTINCT version.modification_id) AS modification_ids
+RETURN market.uid AS uid, modification_ids
+ORDER BY size(modification_ids) DESC, market.uid ASC
+LIMIT $limit
+"""
+
+UNLINKED_MODIFICATIONS_QUERY = """
+MATCH (version:Modification {source_id: $source_id})
+WHERE version.annee = $year
+OPTIONAL MATCH (version)-[:MODIFICATION_DE]->
+               (market:Marche {source_id: $source_id})
+WITH version, market
+WHERE market IS NULL
+RETURN version.uid AS uid, version.modification_id AS modification_id
+ORDER BY uid ASC, modification_id ASC
+LIMIT $limit
+"""
+
+THEME_REGION_SUMMARY_QUERY = """
+MATCH (market:Marche {source_id: $source_id})
+WHERE market.annee = $year
+  AND any(text_value IN coalesce(market.objet_values, [])
+          WHERE toLower(text_value) CONTAINS toLower($theme))
+WITH market, coalesce(market.acheteur_region_code_values, []) AS regions
+RETURN count(*) AS theme_market_count,
+       coalesce(sum(CASE WHEN size(regions) = 0 THEN 1 ELSE 0 END), 0)
+         AS missing_region_count,
+       coalesce(sum(CASE WHEN size(regions) > 1 THEN 1 ELSE 0 END), 0)
+         AS multivalued_region_count,
+       coalesce(
+           sum(CASE WHEN size(regions) = 1 AND regions[0] = $region
+                    THEN 1 ELSE 0 END),
+           0
+       ) AS matching_region_market_count
+"""
+
+THEME_REGION_MARKETS_QUERY = """
+MATCH (market:Marche {source_id: $source_id})
+WHERE market.annee = $year
+  AND any(text_value IN coalesce(market.objet_values, [])
+          WHERE toLower(text_value) CONTAINS toLower($theme))
+WITH market,
+     [text_value IN coalesce(market.objet_values, [])
+      WHERE toLower(text_value) CONTAINS toLower($theme)] AS matching_objects,
+     coalesce(market.acheteur_region_code_values, []) AS regions
+WHERE size(regions) = 1 AND regions[0] = $region
+RETURN market.uid AS uid, regions[0] AS region_code, matching_objects
+ORDER BY market.uid ASC
+LIMIT $limit
+"""
+
+HOLDER_NAME_VARIANTS_COUNT_QUERY = """
+MATCH (holder:Titulaire {source_id: $source_id})
+WITH coalesce(holder.nom_values, []) AS names
+WHERE size(names) > 1
+RETURN count(*) AS holder_count
+"""
+
+HOLDER_NAME_VARIANTS_QUERY = """
+MATCH (holder:Titulaire {source_id: $source_id})
+WITH holder, coalesce(holder.nom_values, []) AS names
+WHERE size(names) > 1
+OPTIONAL MATCH (market:Marche {source_id: $source_id})
+               -[:A_TITULAIRE]->(holder)
+RETURN holder.identifier_type AS identifier_type,
+       holder.identifier_value AS identifier_value,
+       names, collect(DISTINCT market.uid) AS market_uids
+ORDER BY size(names) DESC, identifier_type ASC, identifier_value ASC
+LIMIT $limit
+"""
+
+DATA_QUALITY_ISSUES_QUERY = """
+CALL () {
+    MATCH (market:Marche {source_id: $source_id})
+    WITH market, [
+        CASE WHEN coalesce(market.type_missing_in_source, false)
+             THEN 'type:missing' END,
+        CASE WHEN size(coalesce(market.type_values, [])) > 1
+             THEN 'type:multiple' END,
+        CASE WHEN coalesce(market.codeCPV_missing_in_source, false)
+             THEN 'codeCPV:missing' END,
+        CASE WHEN size(coalesce(market.codeCPV_values, [])) > 1
+             THEN 'codeCPV:multiple' END,
+        CASE WHEN coalesce(market.nature_missing_in_source, false)
+             THEN 'nature:missing' END,
+        CASE WHEN size(coalesce(market.nature_values, [])) > 1
+             THEN 'nature:multiple' END,
+        CASE WHEN coalesce(market.montant_missing_in_source, false)
+             THEN 'montant:missing' END,
+        CASE WHEN size(coalesce(market.montant_values, [])) > 1
+             THEN 'montant:multiple' END,
+        CASE WHEN coalesce(market.procedure_missing_in_source, false)
+             THEN 'procedure:missing' END,
+        CASE WHEN size(coalesce(market.procedure_values, [])) > 1
+             THEN 'procedure:multiple' END,
+        CASE WHEN coalesce(market.dureeMois_missing_in_source, false)
+             THEN 'dureeMois:missing' END,
+        CASE WHEN size(coalesce(market.dureeMois_values, [])) > 1
+             THEN 'dureeMois:multiple' END,
+        CASE WHEN coalesce(market.objet_missing_in_source, false)
+             THEN 'objet:missing' END,
+        CASE WHEN size(coalesce(market.objet_values, [])) > 1
+             THEN 'objet:multiple' END,
+        CASE WHEN coalesce(
+                  market.acheteur_region_code_missing_in_source, false
+             ) THEN 'acheteur_region_code:missing' END,
+        CASE WHEN size(coalesce(market.acheteur_region_code_values, [])) > 1
+             THEN 'acheteur_region_code:multiple' END
+    ] AS issues
+    UNWIND issues AS issue
+    WITH market, issue
+    WHERE issue IS NOT NULL
+    RETURN 'Marche' AS node_type, market.uid AS node_id, issue
+    UNION ALL
+    MATCH (version:Modification {source_id: $source_id})
+    WITH version, [
+        CASE WHEN coalesce(version.nature_missing_in_source, false)
+             THEN 'nature:missing' END,
+        CASE WHEN size(coalesce(version.nature_values, [])) > 1
+             THEN 'nature:multiple' END,
+        CASE WHEN coalesce(version.montant_missing_in_source, false)
+             THEN 'montant:missing' END,
+        CASE WHEN size(coalesce(version.montant_values, [])) > 1
+             THEN 'montant:multiple' END,
+        CASE WHEN coalesce(version.procedure_missing_in_source, false)
+             THEN 'procedure:missing' END,
+        CASE WHEN size(coalesce(version.procedure_values, [])) > 1
+             THEN 'procedure:multiple' END,
+        CASE WHEN coalesce(version.dureeMois_missing_in_source, false)
+             THEN 'dureeMois:missing' END,
+        CASE WHEN size(coalesce(version.dureeMois_values, [])) > 1
+             THEN 'dureeMois:multiple' END,
+        CASE WHEN coalesce(version.objet_missing_in_source, false)
+             THEN 'objet:missing' END,
+        CASE WHEN size(coalesce(version.objet_values, [])) > 1
+             THEN 'objet:multiple' END,
+        CASE WHEN coalesce(version.codeCPV_missing_in_source, false)
+             THEN 'codeCPV:missing' END,
+        CASE WHEN size(coalesce(version.codeCPV_values, [])) > 1
+             THEN 'codeCPV:multiple' END,
+        CASE WHEN coalesce(version.acheteur_id_missing_in_source, false)
+             THEN 'acheteur_id:missing' END,
+        CASE WHEN size(coalesce(version.acheteur_id_values, [])) > 1
+             THEN 'acheteur_id:multiple' END,
+        CASE WHEN coalesce(version.acheteur_nom_missing_in_source, false)
+             THEN 'acheteur_nom:missing' END,
+        CASE WHEN size(coalesce(version.acheteur_nom_values, [])) > 1
+             THEN 'acheteur_nom:multiple' END,
+        CASE WHEN coalesce(version.titulaire_nom_missing_in_source, false)
+             THEN 'titulaire_nom:missing' END,
+        CASE WHEN size(coalesce(version.titulaire_nom_values, [])) > 1
+             THEN 'titulaire_nom:multiple' END,
+        CASE WHEN coalesce(version.titulaire_identity_missing_in_source, false)
+             THEN 'titulaire_identity:missing' END,
+        CASE WHEN size(coalesce(version.titulaire_identity_values, [])) > 1
+             THEN 'titulaire_identity:multiple' END,
+        CASE WHEN version.initial_market_status = 'missing_from_snapshot'
+             THEN 'initial_market:missing' END
+    ] AS issues
+    UNWIND issues AS issue
+    WITH version, issue
+    WHERE issue IS NOT NULL
+    RETURN 'Modification' AS node_type,
+           version.uid + ':' + toString(version.modification_id) AS node_id,
+           issue
+}
+WITH node_type, issue, collect(DISTINCT node_id) AS node_ids
+RETURN node_type, issue, size(node_ids) AS affected_record_count,
+       node_ids[0..25] AS sample_node_ids
+ORDER BY node_type ASC, issue ASC
 """
 
 
@@ -198,7 +434,7 @@ def _market_evidence(
     object_id: str,
 ) -> tuple[EvidenceReference, ...]:
     return tuple(
-        EvidenceReference(str(uid), predicate, object_id)
+        EvidenceReference("Marche", str(uid), predicate, object_id)
         for uid in sorted(set(market_uids))
     )
 
@@ -300,12 +536,16 @@ def aggregate_amounts_and_durations_by_cpv(
                     aggregate.amount_evidence.extend(
                         (
                             EvidenceReference(
+                                "Marche",
                                 uid,
                                 "codeCPV_values",
                                 family_values[family_code][0],
                             ),
                             EvidenceReference(
-                                uid, "montant_values", str(amount_values[0])
+                                "Marche",
+                                uid,
+                                "montant_values",
+                                str(amount_values[0]),
                             ),
                         )
                     )
@@ -327,11 +567,13 @@ def aggregate_amounts_and_durations_by_cpv(
                     aggregate.duration_evidence.extend(
                         (
                             EvidenceReference(
+                                "Marche",
                                 uid,
                                 "codeCPV_values",
                                 family_values[family_code][0],
                             ),
                             EvidenceReference(
+                                "Marche",
                                 uid,
                                 "dureeMois_values",
                                 str(duration_values[0]),
@@ -461,8 +703,7 @@ def rank_buyers(
         rows=rows,
         limitations=(
             "Le classement est filtré par année et couvre tout le territoire "
-            "national : la région de l’acheteur n’est pas présente dans le "
-            "graphe chargé.",
+            "national, conformément au périmètre retenu pour cette question.",
             f"Le classement est limité aux {limit} premiers acheteurs.",
         ),
     )
@@ -495,8 +736,11 @@ def rank_holders_for_buyer(
                 evidence_item
                 for uid in sorted(set(record["market_uids"]))
                 for evidence_item in (
-                    EvidenceReference(uid, "A_ACHETEUR", buyer_id),
                     EvidenceReference(
+                        "Marche", uid, "A_ACHETEUR", buyer_id
+                    ),
+                    EvidenceReference(
+                        "Marche",
                         uid,
                         "A_TITULAIRE",
                         f"{record['identifier_type']}:"
@@ -590,10 +834,16 @@ def find_holders_with_multiple_buyers(
             for path in record["market_buyers"]
             for evidence_item in (
                 EvidenceReference(
-                    path["market_uid"], "A_TITULAIRE", holder_id
+                    "Marche",
+                    path["market_uid"],
+                    "A_TITULAIRE",
+                    holder_id,
                 ),
                 EvidenceReference(
-                    path["market_uid"], "A_ACHETEUR", path["buyer_id"]
+                    "Marche",
+                    path["market_uid"],
+                    "A_ACHETEUR",
+                    path["buyer_id"],
                 ),
             )
         )
@@ -615,4 +865,333 @@ def find_holders_with_multiple_buyers(
         limitations=(
             f"Le classement est limité aux {limit} premiers titulaires.",
         ),
+    )
+
+
+def summarize_modification_history(
+    session: Session,
+    *,
+    year: int = 2025,
+    limit: int = 10,
+) -> QueryResponse[ModificationHistorySummary]:
+    _validate_limit(limit)
+    summary = session.run(
+        MODIFICATION_HISTORY_SUMMARY_QUERY,
+        source_id=DATASET_ID,
+        year=year,
+    ).single()
+    if summary is None:
+        raise GraphQueryDataError(
+            "La synthèse de l'historique des modifications est absente."
+        )
+
+    modified_markets = tuple(
+        ModifiedMarketCount(
+            uid=record["uid"],
+            modification_ids=tuple(
+                sorted(int(value) for value in record["modification_ids"])
+            ),
+        )
+        for record in session.run(
+            MODIFIED_MARKETS_QUERY,
+            source_id=DATASET_ID,
+            year=year,
+            limit=limit,
+        )
+    )
+    unlinked_samples = tuple(
+        UnlinkedModification(
+            uid=record["uid"],
+            modification_id=int(record["modification_id"]),
+        )
+        for record in session.run(
+            UNLINKED_MODIFICATIONS_QUERY,
+            source_id=DATASET_ID,
+            year=year,
+            limit=MAX_AGGREGATE_EVIDENCE_MARKETS,
+        )
+    )
+    evidence = tuple(
+        [
+            EvidenceReference(
+                "Marche",
+                market.uid,
+                "HAS_MODIFICATION",
+                str(modification_id),
+            )
+            for market in modified_markets
+            for modification_id in market.modification_ids
+        ]
+        + [
+            EvidenceReference(
+                "Modification",
+                f"{item.uid}:{item.modification_id}",
+                "initial_market_status",
+                "missing_from_snapshot",
+            )
+            for item in unlinked_samples
+        ]
+    )
+    result = ModificationHistorySummary(
+        year=year,
+        modified_market_count=int(summary["modified_market_count"]),
+        total_version_count=int(summary["total_version_count"]),
+        linked_version_count=int(summary["linked_version_count"]),
+        unlinked_version_count=int(summary["unlinked_version_count"]),
+        modified_markets=modified_markets,
+        unlinked_samples=unlinked_samples,
+    )
+    limitations = [
+        "Les versions sont filtrées par année de notification ; seules les "
+        "versions reliées à un marché initial sont classées par marché."
+    ]
+    if result.unlinked_version_count:
+        limitations.append(
+            f"{result.unlinked_version_count} version(s) n'ont pas de marché "
+            "initial dans le snapshot ; elles restent signalées sans créer "
+            "de marché fictif."
+        )
+    if result.modified_market_count > limit:
+        limitations.append(
+            f"Le détail est limité aux {limit} marchés ayant le plus de "
+            "versions."
+        )
+    if result.unlinked_version_count > len(unlinked_samples):
+        limitations.append(
+            f"Les preuves des versions sans marché initial sont limitées aux "
+            f"{len(unlinked_samples)} premiers exemples."
+        )
+    return QueryResponse(
+        question_id=4,
+        rows=(
+            QueryRow(
+                result=result,
+                evidence=evidence,
+                evidence_complete=(
+                    result.modified_market_count <= limit
+                    and result.unlinked_version_count <= len(unlinked_samples)
+                ),
+            ),
+        ),
+        limitations=tuple(limitations),
+    )
+
+
+def find_theme_in_buyer_region(
+    session: Session,
+    theme: str,
+    region_code: str,
+    *,
+    year: int = 2025,
+    limit: int = 100,
+) -> QueryResponse[ThemedMarket]:
+    theme = theme.strip()
+    region_code = region_code.strip()
+    if not theme:
+        raise ValueError("Le thème doit contenir au moins un caractère.")
+    if not region_code:
+        raise ValueError("Le code de région doit contenir au moins un caractère.")
+    _validate_limit(limit)
+
+    parameters = {
+        "source_id": DATASET_ID,
+        "year": year,
+        "theme": theme,
+        "region": region_code,
+    }
+    summary = session.run(
+        THEME_REGION_SUMMARY_QUERY,
+        **parameters,
+    ).single()
+    if summary is None:
+        raise GraphQueryDataError(
+            "La synthèse de recherche par thème et région est absente."
+        )
+
+    records = session.run(
+        THEME_REGION_MARKETS_QUERY,
+        **parameters,
+        limit=limit,
+    )
+    rows = tuple(
+        QueryRow(
+            result=ThemedMarket(
+                uid=record["uid"],
+                region_code=record["region_code"],
+                matching_objects=tuple(sorted(record["matching_objects"])),
+            ),
+            evidence=tuple(
+                EvidenceReference(
+                    "Marche",
+                    record["uid"],
+                    "objet_values",
+                    text_value,
+                )
+                for text_value in sorted(record["matching_objects"])
+            )
+            + (
+                EvidenceReference(
+                    "Marche",
+                    record["uid"],
+                    "acheteur_region_code_values",
+                    record["region_code"],
+                ),
+            ),
+            evidence_complete=(
+                int(summary["matching_region_market_count"]) <= limit
+            ),
+        )
+        for record in records
+    )
+    metadata = (
+        ("theme_market_count", int(summary["theme_market_count"])),
+        ("missing_region_count", int(summary["missing_region_count"])),
+        ("multivalued_region_count", int(summary["multivalued_region_count"])),
+        (
+            "matching_region_market_count",
+            int(summary["matching_region_market_count"]),
+        ),
+    )
+    limitations = [
+        "Le thème est recherché comme sous-chaîne insensible à la casse dans "
+        "les valeurs distinctes de l'objet.",
+        "Les marchés sans région ou ayant plusieurs régions sont exclus du "
+        "résultat par région et comptés séparément.",
+    ]
+    if summary["matching_region_market_count"] > limit:
+        limitations.append(
+            f"Seuls les {limit} premiers marchés correspondants sont détaillés."
+        )
+    return QueryResponse(
+        question_id=7,
+        rows=rows,
+        limitations=tuple(limitations),
+        metadata=metadata,
+    )
+
+
+def find_holder_name_variants(
+    session: Session,
+    *,
+    limit: int = 25,
+) -> QueryResponse[HolderNameVariants]:
+    _validate_limit(limit)
+    summary = session.run(
+        HOLDER_NAME_VARIANTS_COUNT_QUERY,
+        source_id=DATASET_ID,
+    ).single()
+    if summary is None:
+        raise GraphQueryDataError(
+            "Le compte des variantes de noms titulaires est absent."
+        )
+    records = session.run(
+        HOLDER_NAME_VARIANTS_QUERY,
+        source_id=DATASET_ID,
+        limit=limit,
+    )
+    rows: list[QueryRow[HolderNameVariants]] = []
+    for record in records:
+        identifier_type = record["identifier_type"]
+        identifier_value = record["identifier_value"]
+        holder_id = f"{identifier_type}:{identifier_value}"
+        names = _names(record["names"])
+        market_uids = tuple(sorted(set(record["market_uids"] or ())))
+        evidence = tuple(
+            [
+                EvidenceReference(
+                    "Titulaire", holder_id, "nom_values", name
+                )
+                for name in names
+            ]
+            + [
+                EvidenceReference(
+                    "Marche", uid, "A_TITULAIRE", holder_id
+                )
+                for uid in market_uids[:MAX_AGGREGATE_EVIDENCE_MARKETS]
+            ]
+        )
+        rows.append(
+            QueryRow(
+                result=HolderNameVariants(
+                    identifier_type=identifier_type,
+                    identifier_value=identifier_value,
+                    names=names,
+                    market_count=len(market_uids),
+                ),
+                evidence=evidence,
+                evidence_complete=(
+                    len(market_uids) <= MAX_AGGREGATE_EVIDENCE_MARKETS
+                ),
+            )
+        )
+    limitations = [
+        "Les variantes sont regroupées uniquement sous l'identité titulaire "
+        "déjà résolue par identifiant typé ; les noms seuls ne fusionnent pas "
+        "des titulaires.",
+        "Les résultats sont limités aux titulaires ayant plusieurs noms, "
+        f"avec un plafond de {limit} titulaires et {MAX_AGGREGATE_EVIDENCE_MARKETS} "
+        "preuves de marchés par titulaire.",
+    ]
+    if summary["holder_count"] > limit:
+        limitations.append(
+            f"Seuls les {limit} premiers titulaires avec des variantes sont "
+            "détaillés."
+        )
+    if summary["holder_count"] == 0:
+        limitations.append(
+            "Aucun titulaire avec plusieurs noms distincts n'a été trouvé "
+            "dans le snapshot interrogé."
+        )
+    return QueryResponse(
+        question_id=9,
+        rows=tuple(rows),
+        limitations=tuple(limitations),
+        metadata=(("variant_holder_count", int(summary["holder_count"])),),
+    )
+
+
+def summarize_graph_data_issues(
+    session: Session,
+) -> QueryResponse[DataQualityIssue]:
+    records = session.run(
+        DATA_QUALITY_ISSUES_QUERY,
+        source_id=DATASET_ID,
+    )
+    rows: list[QueryRow[DataQualityIssue]] = []
+    for record in records:
+        sample_node_ids = tuple(record["sample_node_ids"])
+        affected_count = int(record["affected_record_count"])
+        issue_code = record["issue"]
+        node_type = record["node_type"]
+        evidence = tuple(
+            EvidenceReference(
+                node_type,
+                node_id,
+                issue_code,
+                "observed",
+            )
+            for node_id in sample_node_ids
+        )
+        rows.append(
+            QueryRow(
+                result=DataQualityIssue(
+                    node_type=node_type,
+                    issue_code=issue_code,
+                    affected_record_count=affected_count,
+                ),
+                evidence=evidence,
+                evidence_complete=affected_count <= len(sample_node_ids),
+            )
+        )
+    limitations = (
+        "Les valeurs manquantes reflètent les indicateurs source ; les valeurs "
+        "multiples signalent une hétérogénéité conservée, pas une erreur "
+        "automatiquement arbitrée.",
+        "Les preuves listent jusqu'à 25 exemples par signal ; les comptes "
+        "portent sur tous les nœuds du snapshot.",
+    )
+    return QueryResponse(
+        question_id=10,
+        rows=tuple(rows),
+        limitations=limitations,
     )
