@@ -79,6 +79,28 @@ chaque version à un marché initial existant ; si le snapshot ne contient pas
 ce marché, il conserve la version sans lien, marque explicitement cette limite
 et en rapporte le nombre, sans créer de marché fictif.
 
+### Validation locale et rejets
+
+La validation SHACL de `marchegraph.graph.validation.validate_graph` ne modifie
+pas le graphe : chaque nœud qui enfreint une règle reste dans les données et le
+rapport expose ses triples RDF, l'identifiant stable de chaque règle et son
+motif. Les rejets peuvent être conservés localement en JSON Lines, un
+enregistrement par nœud, avec les triples et motifs associés :
+
+```python
+from pathlib import Path
+
+from marchegraph.graph.validation import validate_graph, write_rejections
+
+report = validate_graph(data_graph, shapes_graph, ontology_graph)
+if not report.conforms:
+    write_rejections(report, Path("data/prepared/graph-demo/rejections.jsonl"))
+```
+
+Les identifiants `MG-VAL-*` définis dans `docs/exemple/formes.ttl` sont
+retournés avec chaque motif. Le fichier de rejets est local et doit rester
+ignoré par Git, comme les autres sorties dérivées.
+
 Le manifeste JSON indique le chemin source, son SHA-256, sa taille en octets,
 la date d'extraction (`null`, car inconnue) et les chemins des sorties. Le
 rapport de qualité distingue les lignes et les `uid` distincts des attributions

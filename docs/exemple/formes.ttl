@@ -5,22 +5,52 @@
 
 mg:MarcheShape a sh:NodeShape ;
     sh:targetClass mg:Marche ;
-    sh:property [ sh:path mg:acheteur ; sh:minCount 1 ; sh:maxCount 1 ; sh:class mg:Acheteur ;
-        sh:message "Un marché doit avoir exactement un acheteur."@fr ] ;
-    sh:property [ sh:path mg:titulaire ; sh:minCount 1 ; sh:class mg:Titulaire ;
-        sh:message "Un marché doit avoir au moins un titulaire."@fr ] ;
-    sh:property [ sh:path mg:montantHT ; sh:minCount 1 ; sh:datatype xsd:decimal ; sh:minExclusive 0 ;
-        sh:message "Le montant HT doit être un nombre strictement positif."@fr ] ;
-    sh:property [ sh:path mg:categorieCPV ; sh:minCount 1 ; sh:class skos:Concept ;
-        sh:message "Un marché doit avoir un code CPV."@fr ] .
+    sh:property mg:MarcheBuyerRule ;
+    sh:property mg:MarcheHolderRule ;
+    sh:property mg:MarcheAmountRule ;
+    sh:property mg:MarcheCpvRule .
+
+mg:MarcheBuyerRule
+    a sh:PropertyShape ;
+    mg:ruleId "MG-VAL-MARCHE-ACHETEUR-001" ;
+    sh:path mg:acheteur ; sh:minCount 1 ; sh:maxCount 1 ; sh:class mg:Acheteur ;
+    sh:message "Un marché doit avoir exactement un acheteur."@fr .
+
+mg:MarcheHolderRule
+    a sh:PropertyShape ;
+    mg:ruleId "MG-VAL-MARCHE-TITULAIRE-002" ;
+    sh:path mg:titulaire ; sh:minCount 1 ; sh:class mg:Titulaire ;
+    sh:message "Un marché doit avoir au moins un titulaire."@fr .
+
+mg:MarcheAmountRule
+    a sh:PropertyShape ;
+    mg:ruleId "MG-VAL-MARCHE-MONTANT-003" ;
+    sh:path mg:montantHT ; sh:minCount 1 ; sh:datatype xsd:decimal ; sh:minExclusive 0 ;
+    sh:message "Le montant HT doit être un nombre strictement positif."@fr .
+
+mg:MarcheCpvRule
+    a sh:PropertyShape ;
+    mg:ruleId "MG-VAL-MARCHE-CPV-004" ;
+    sh:path mg:categorieCPV ; sh:minCount 1 ; sh:class skos:Concept ;
+    sh:message "Un marché doit avoir un code CPV."@fr .
 
 mg:ModificationShape a sh:NodeShape ;
     sh:targetClass mg:Modification ;
-    sh:property [ sh:path mg:modificationDe ; sh:minCount 1 ; sh:maxCount 1 ;
-        sh:class mg:Marche ;
-        sh:message "Une modification doit concerner exactement un marché."@fr ] .
+    sh:property mg:ModificationMarketRule .
+
+mg:ModificationMarketRule
+    a sh:PropertyShape ;
+    mg:ruleId "MG-VAL-MODIFICATION-MARCHE-005" ;
+    sh:path mg:modificationDe ; sh:minCount 1 ; sh:maxCount 1 ;
+    sh:class mg:Marche ;
+    sh:message "Une modification doit concerner exactement un marché."@fr .
 
 mg:TitulaireShape a sh:NodeShape ;
     sh:targetClass mg:Titulaire ;
-    sh:property [ sh:path mg:siret ; sh:pattern "^[0-9]{14}$" ;
-        sh:message "Un SIRET contient exactement 14 chiffres."@fr ] .
+    sh:property mg:HolderSiretRule .
+
+mg:HolderSiretRule
+    a sh:PropertyShape ;
+    mg:ruleId "MG-VAL-TITULAIRE-SIRET-006" ;
+    sh:path mg:siret ; sh:pattern "^[0-9]{14}$" ;
+    sh:message "Un SIRET contient exactement 14 chiffres."@fr .
