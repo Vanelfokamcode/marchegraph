@@ -10,7 +10,7 @@ companions: ["_bmad-output/initiative-marchegraph-decp/architecture-marchegraph-
 after: ["epic-fondation-decp-reproductible"]
 refined: true
 risk: high
-status: in-progress
+status: done
 ---
 
 # Résolution des identités titulaires
