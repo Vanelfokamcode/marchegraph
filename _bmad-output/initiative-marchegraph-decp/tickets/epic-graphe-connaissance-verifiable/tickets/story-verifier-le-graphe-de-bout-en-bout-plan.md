@@ -1,7 +1,7 @@
 ---
 title: "Vérifier le graphe de bout en bout"
 ticket: 9
-status: built
+status: done
 ---
 
 # Vérification locale de bout en bout
