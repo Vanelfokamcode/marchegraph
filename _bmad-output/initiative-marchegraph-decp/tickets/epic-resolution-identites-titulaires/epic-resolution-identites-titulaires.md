@@ -106,10 +106,9 @@ pour 2025 et 2024.
   et en le passant en majuscules ; ne retirer que les espaces externes de la
   valeur et préserver sa casse, sa ponctuation, ses espaces internes et ses
   zéros initiaux.
-- Open question: Le plan et la taille de l'échantillon, ainsi que l'identité
-  de la personne chargée de la vérification manuelle, seront fixés au
-  découpage en stories ; le seuil de réussite restera ouvert jusqu'à la mesure
-  de la baseline.
+- Open question: Quel relecteur externe indépendant et nommé est disponible
+  pour vérifier manuellement l'échantillon avant le démarrage de l'étape HITL ?
+  Le seuil de réussite restera ouvert jusqu'à la mesure de la baseline.
 - Decision: 2026-10-27 — La story qui demande l'adjudication manuelle de
   l'échantillon sera marquée `hitl = true` lors du découpage.
 - Decision: 2026-10-27 — Évaluer la précision des groupes rapprochés ; décrire
@@ -118,14 +117,17 @@ pour 2025 et 2024.
 - Decision: 2026-10-27 — La vérification manuelle est réalisée par une
   personne autre que le propriétaire du projet ; son identité est fixée avant
   que la story HITL commence.
+- Decision: 2026-10-28 — Pour une baseline descriptive reproductible,
+  vérifier 100 groupes d'identité canonique résolus, échantillonnés
+  aléatoirement avec graine fixe 42, 50 en 2024 et 50 en 2025 ; rapporter la
+  composition par type sans prétendre à une précision statistique par type.
 - Decision: 2026-10-27 — La story 2.1 est le tracer bullet : elle traverse le
   contrat préparé, la clé d'identité typée et le résultat local vérifiable ;
   la story 2.2 suit pour traiter le risque le moins certain, la mesure manuelle
   de précision.
 - Decision: 2026-10-27 — L'utilisateur approuve deux stories : résolution
   déterministe en 2.1, puis évaluation manuelle de précision en 2.2. La story
-  HITL reste bloquée jusqu'à confirmation du relecteur externe et de la taille
-  d'échantillon.
+  HITL reste bloquée jusqu'à confirmation du relecteur externe.
 - Risk rationale: une fusion erronée ou une identité scindée biaiserait les
   comptes de titulaires et les analyses de réseau en aval ; la règle
   conservatrice et l'échantillon vérifié limitent ce risque.
