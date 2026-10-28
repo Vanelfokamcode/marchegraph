@@ -16,6 +16,10 @@ from marchegraph.graph.neo4j_store import (
     read_demo_data,
     top_buyer_with_evidence,
 )
+from marchegraph.graph.neo4j_config import (
+    LocalNeo4jURLError,
+    validate_local_neo4j_uri,
+)
 from marchegraph.graph.rdf_export import graph_from_data
 from marchegraph.graph.validation import validate_graph
 
@@ -37,6 +41,10 @@ def run_demo(output_dir: Path) -> None:
     uri = os.environ.get("NEO4J_URI", "bolt://127.0.0.1:7687")
     username = os.environ.get("NEO4J_USERNAME", "neo4j")
     database = os.environ.get("NEO4J_DATABASE", "neo4j")
+    try:
+        validate_local_neo4j_uri(uri)
+    except LocalNeo4jURLError as error:
+        raise DemoError(str(error)) from error
     output_dir.mkdir(parents=True, exist_ok=True)
 
     try:

@@ -11,6 +11,11 @@ import duckdb
 from neo4j import GraphDatabase, ManagedTransaction, Session
 from neo4j.exceptions import DriverError, Neo4jError
 
+from marchegraph.graph.neo4j_config import (
+    LocalNeo4jURLError,
+    validate_local_neo4j_uri,
+)
+
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_INPUT = PROJECT_ROOT / "data/prepared/decp.parquet"
 DEFAULT_IDENTITIES = PROJECT_ROOT / "data/prepared/holder-identities.parquet"
@@ -613,6 +618,10 @@ def run_import(
     uri = os.environ.get("NEO4J_URI", "bolt://127.0.0.1:7687")
     username = os.environ.get("NEO4J_USERNAME", "neo4j")
     database = os.environ.get("NEO4J_DATABASE", "neo4j")
+    try:
+        validate_local_neo4j_uri(uri)
+    except LocalNeo4jURLError as error:
+        raise InitialAwardLoadError(str(error)) from error
     try:
         with GraphDatabase.driver(uri, auth=(username, password)) as driver:
             driver.verify_connectivity()

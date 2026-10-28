@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 from neo4j import Driver, Session
 
+from marchegraph.graph.contracts import DemoBuyerRanking as BuyerRanking
 from marchegraph.graph.demo_data import (
     DEMO_DATA,
     DEMO_ID,
@@ -13,14 +12,6 @@ from marchegraph.graph.demo_data import (
     Market,
     Modification,
 )
-
-
-@dataclass(frozen=True)
-class BuyerRanking:
-    buyer_id: str
-    buyer_name: str
-    market_count: int
-    market_uids: tuple[str, ...]
 
 
 def load_demo_data(session: Session, data: DemoData = DEMO_DATA) -> None:

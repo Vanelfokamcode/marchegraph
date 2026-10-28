@@ -18,6 +18,10 @@ from marchegraph.graph.load_initial_awards import (
     iter_batches,
     write_batches,
 )
+from marchegraph.graph.neo4j_config import (
+    LocalNeo4jURLError,
+    validate_local_neo4j_uri,
+)
 
 MODIFICATION_FILTER = (
     "source.modification_id > 0 "
@@ -469,6 +473,10 @@ def run_import(
     uri = os.environ.get("NEO4J_URI", "bolt://127.0.0.1:7687")
     username = os.environ.get("NEO4J_USERNAME", "neo4j")
     database = os.environ.get("NEO4J_DATABASE", "neo4j")
+    try:
+        validate_local_neo4j_uri(uri)
+    except LocalNeo4jURLError as error:
+        raise ModificationLoadError(str(error)) from error
     try:
         with GraphDatabase.driver(uri, auth=(username, password)) as driver:
             driver.verify_connectivity()

@@ -4,19 +4,25 @@ import json
 import os
 import sys
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
-from urllib.parse import urlparse
 
 import duckdb
 from neo4j import GraphDatabase
-from rdflib import Graph, Namespace, RDF, URIRef
+from rdflib import Graph, Namespace, RDF
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from marchegraph.graph import load_initial_awards, load_modifications, queries
-from marchegraph.graph.demo_data import DEMO_DATA
+from marchegraph.graph import (
+    load_initial_awards,
+    load_modifications,
+    neo4j_store,
+    queries,
+)
+from marchegraph.graph.demo_data import DEMO_DATA, DemoData
+from marchegraph.graph.neo4j_config import validate_local_neo4j_uri
 from marchegraph.graph.rdf_export import graph_from_data
 from marchegraph.graph.validation import validate_graph, write_rejections
 
@@ -24,6 +30,7 @@ from marchegraph.graph.validation import validate_graph, write_rejections
 ROOT = Path(__file__).resolve().parents[1]
 MG = Namespace("https://example.org/marchegraph/")
 SOURCE_ID = "story-3-9-local-integration-fixture"
+DEMO_SOURCE_ID = "story-3-9-local-integration-demo"
 NEO4J_PASSWORD = os.environ.get("NEO4J_PASSWORD")
 
 
@@ -224,6 +231,49 @@ def _write_source_fixtures(directory: Path) -> tuple[Path, Path]:
     return source_path, identities_path
 
 
+def _scoped_demo_data() -> DemoData:
+    buyer_ids = {
+        buyer.identifier: f"{DEMO_SOURCE_ID}:{buyer.identifier}"
+        for buyer in DEMO_DATA.buyers
+    }
+    holder_ids = {
+        holder.identifier: f"{DEMO_SOURCE_ID}:{holder.identifier}"
+        for holder in DEMO_DATA.holders
+    }
+    market_uids = {
+        market.uid: f"{DEMO_SOURCE_ID}:{market.uid}"
+        for market in DEMO_DATA.markets
+    }
+    return replace(
+        DEMO_DATA,
+        buyers=tuple(
+            replace(buyer, identifier=buyer_ids[buyer.identifier])
+            for buyer in DEMO_DATA.buyers
+        ),
+        holders=tuple(
+            replace(holder, identifier=holder_ids[holder.identifier])
+            for holder in DEMO_DATA.holders
+        ),
+        markets=tuple(
+            replace(
+                market,
+                uid=market_uids[market.uid],
+                buyer_id=buyer_ids[market.buyer_id],
+                holder_ids=tuple(holder_ids[item] for item in market.holder_ids),
+            )
+            for market in DEMO_DATA.markets
+        ),
+        modifications=tuple(
+            replace(
+                modification,
+                identifier=f"{DEMO_SOURCE_ID}:{modification.identifier}",
+                market_uid=market_uids[modification.market_uid],
+            )
+            for modification in DEMO_DATA.modifications
+        ),
+    )
+
+
 @unittest.skipUnless(
     NEO4J_PASSWORD,
     "Set NEO4J_PASSWORD to run the local Neo4j end-to-end fixture.",
@@ -231,8 +281,7 @@ def _write_source_fixtures(directory: Path) -> tuple[Path, Path]:
 class GraphEndToEndTests(unittest.TestCase):
     def test_local_fixture_covers_load_queries_validation_and_rdf_export(self):
         uri = os.environ.get("NEO4J_URI", "bolt://127.0.0.1:7687")
-        if urlparse(uri).hostname not in {"127.0.0.1", "localhost", "::1"}:
-            self.fail("The end-to-end fixture must connect only to local Neo4j.")
+        validate_local_neo4j_uri(uri)
 
         with TemporaryDirectory() as temporary_directory:
             source_path, identities_path = _write_source_fixtures(
@@ -265,6 +314,9 @@ class GraphEndToEndTests(unittest.TestCase):
                                 load_modifications, "DATASET_ID", SOURCE_ID
                             ),
                             patch.object(queries, "DATASET_ID", SOURCE_ID),
+                            patch.object(
+                                neo4j_store, "DEMO_ID", DEMO_SOURCE_ID
+                            ),
                         ):
                             load_initial_awards.load_initial_awards(
                                 session, source_path, identities_path
@@ -295,6 +347,10 @@ class GraphEndToEndTests(unittest.TestCase):
                                 queries.find_holder_name_variants(session),
                                 queries.summarize_graph_data_issues(session),
                             )
+                            neo4j_store.load_demo_data(
+                                session, _scoped_demo_data()
+                            )
+                            demo_data = neo4j_store.read_demo_data(session)
 
                         question_ids = {
                             question_id
@@ -336,7 +392,7 @@ class GraphEndToEndTests(unittest.TestCase):
                             ROOT / "docs/exemple/formes.ttl",
                             format="turtle",
                         )
-                        exported_graph = graph_from_data(DEMO_DATA)
+                        exported_graph = graph_from_data(demo_data)
                         validation = validate_graph(
                             exported_graph, shapes, ontology
                         )
@@ -352,11 +408,10 @@ class GraphEndToEndTests(unittest.TestCase):
                             reloaded_graph,
                         )
 
-                        market = URIRef(
-                            "https://marchegraph.local/resource/marche/"
-                            "demo-marche-2025-001"
+                        market = next(
+                            exported_graph.subjects(RDF.type, MG.Marche)
                         )
-                        rejected_graph = graph_from_data(DEMO_DATA)
+                        rejected_graph = graph_from_data(demo_data)
                         rejected_graph.remove((market, MG.acheteur, None))
                         rejection_report = validate_graph(
                             rejected_graph, shapes, ontology
@@ -385,6 +440,11 @@ class GraphEndToEndTests(unittest.TestCase):
                             "MATCH (node {source_id: $source_id}) "
                             "DETACH DELETE node",
                             source_id=SOURCE_ID,
+                        ).consume()
+                        session.run(
+                            "MATCH (node {demo_id: $demo_id}) "
+                            "DETACH DELETE node",
+                            demo_id=DEMO_SOURCE_ID,
                         ).consume()
 
 

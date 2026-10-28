@@ -155,6 +155,10 @@ les réponses de référence sont répétables et explicables.
   aux montants ou durées distincts multiples de l'agrégat correspondant et
   rapporter leur nombre ; compter une valeur unique une fois même si d'autres
   lignes source sont sans valeur, en signalant ces manques.
+- Decision: 2026-10-28 — Pour respecter AD-5, les contrats de réponse et de
+  preuve restent dans un module indépendant des pilotes et bibliothèques
+  d'interface. Pour respecter AD-4, les points d'entrée Neo4j refusent toute
+  URI qui ne cible pas la boucle locale.
 - Source conflict: 2026-10-28 — Parmi les modifications notifiées en 2024–2025,
   83 500 `uid` distincts (65 953 en 2024 et 37 109 en 2025) n'ont aucune
   attribution initiale dans le Parquet préparé. Cela concerne 182 283 couples

@@ -49,6 +49,8 @@ PYTHONPATH=src uv run --locked python -m marchegraph.graph.demo
 Neo4j et son port Bolt sont liés à `127.0.0.1`. `docker compose up -d --wait`
 peut être utilisé pour attendre la disponibilité complète. Le mot de passe est
 fourni par l'environnement et ne doit pas être enregistré dans le dépôt.
+Les commandes de démonstration et d'import refusent une `NEO4J_URI` qui ne
+pointe pas vers `localhost`, `127.0.0.1` ou `::1`.
 L'export est écrit dans `data/prepared/graph-demo/graph-demo.ttl`, sous un
 chemin ignoré par Git.
 
@@ -82,11 +84,12 @@ et en rapporte le nombre, sans créer de marché fictif.
 ### Vérification bout en bout sur fixture locale
 
 Le test d'intégration charge des Parquet synthétiques dans Neo4j local,
-exécute les dix questions de référence, puis vérifie la validation SHACL,
-l'export RDF et la traçabilité JSON Lines d'un rejet. Il refuse toute URI Neo4j
-qui ne pointe pas vers `localhost`, `127.0.0.1` ou `::1`, et supprime ses nœuds
-de fixture à la fin. Il n'utilise ni le snapshot DECP ni de service distant ;
-les fichiers d'export et de rejet restent dans un dossier temporaire.
+exécute les dix questions de référence, puis charge et relit le tracer bullet
+synthétique dans Neo4j avant de vérifier la validation SHACL et son export RDF.
+Il vérifie aussi la traçabilité JSON Lines d'un rejet. Il refuse toute URI
+Neo4j qui ne pointe pas vers `localhost`, `127.0.0.1` ou `::1`, et supprime ses
+nœuds de fixture à la fin. Il n'utilise ni le snapshot DECP ni de service
+distant ; les fichiers d'export et de rejet restent dans un dossier temporaire.
 
 Après avoir démarré Neo4j local et défini `NEO4J_PASSWORD`, lancez :
 
