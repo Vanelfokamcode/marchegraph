@@ -103,6 +103,14 @@ les réponses de référence sont répétables et explicables.
 - Decision: 2026-10-28 — L'utilisateur choisit de raffiner l'epic à partir du
   périmètre et de l'architecture approuvés sans lancer `bmad-architecture`
   auparavant.
+- Decision: 2026-10-28 — Le tracer bullet est l'entrée 1 : approbation du
+  modèle par l'utilisateur puis démonstration locale d'un cas synthétique
+  traversant le chargement, la validation, une réponse avec preuve et l'export
+  RDF.
+- Decision: 2026-10-28 — Charger d'abord les attributions initiales, puis les
+  modifications ; appliquer ensuite les validations, dérouler les requêtes de
+  référence par groupes ordonnés, effectuer le refactor sweep et terminer par
+  une vérification intégrée de bout en bout.
 - Open question: Comment représenter les versions de modification et les
   marchés avec plusieurs titulaires dans le graphe ?
 - Open question: Quel mapping RDF, quelle sérialisation et quelles formes SHACL
