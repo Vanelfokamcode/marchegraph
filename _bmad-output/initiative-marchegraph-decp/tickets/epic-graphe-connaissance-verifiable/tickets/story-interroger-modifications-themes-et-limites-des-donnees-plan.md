@@ -1,7 +1,7 @@
 ---
 title: "Interroger modifications, thèmes et limites des données"
 ticket: 7
-status: built
+status: done
 ---
 
 # Requêtes de modifications, de thèmes et de qualité
