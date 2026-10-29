@@ -87,7 +87,8 @@ hallucinations et les coûts.
   déterministe (proposé) ou abstention.
 - Open question: Emplacement du code (`src/marchegraph/queries/` et `app.py`
   selon l'architecture, contre `graph/queries.py` et `demo_chat.py`
-  aujourd'hui).
+  aujourd'hui). Résolu le 2026-10-29 (story 2) : reconnaissance et
+  dispatch dans `src/marchegraph/queries/`, Cypher dans `graph/queries.py`.
 - Open question: Ajouter un modèle d'environ 4 milliards de paramètres au test
   de la story 1 (0,5 Go de RAM libre observée avec `qwen3:8b` et Neo4j).
   Résolu le 2026-10-29 : `qwen3:4b-instruct` et `phi4-mini:3.8b` testés.

@@ -5,63 +5,26 @@ Déterministe, sans LLM. Neo4j en lecture seule, loopback uniquement.
 from __future__ import annotations
 
 import os
-import re
-import unicodedata
 from dataclasses import asdict, is_dataclass
 from decimal import Decimal
 from urllib.parse import urlparse
 
-from marchegraph.graph import queries as q
+from marchegraph.queries.interpretation import interpret
 
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
 
 SUPPORTED = [
     "Quels acheteurs ont attribué le plus de marchés en 2025 ?",
     "Quels titulaires reviennent le plus chez l'acheteur 12345678901234 ?",
-    "Quel montant et quelle durée par famille CPV ?",
+    "Quel montant total par famille CPV ?",
     "Quels marchés ont été modifiés en 2025 ?",
     "Quelles procédures et natures de marché sont utilisées ?",
     "Quels titulaires travaillent avec plusieurs acheteurs ?",
+    "Quels marchés concernent la voirie en Bretagne ?",
+    "Quelle durée moyenne par famille CPV ?",
     "Quels fournisseurs ont plusieurs écritures de leur nom ?",
     "Quelles données sont manquantes ou incohérentes ?",
 ]
-
-
-def _norm(text: str) -> str:
-    decomposed = unicodedata.normalize("NFKD", text.lower())
-    return "".join(c for c in decomposed if not unicodedata.combining(c))
-
-
-def interpret(text: str):
-    """Renvoie (libellé, fonction, paramètres) ou None si on doit s'abstenir."""
-    t = _norm(text)
-    has = lambda *words: any(w in t for w in words)
-    year_match = re.search(r"\b(2024|2025)\b", t)
-    year = int(year_match.group(1)) if year_match else 2025
-    siret = re.search(r"\b\d{14}\b", t)
-
-    if siret and has("titulaire", "fournisseur", "entreprise"):
-        return ("Titulaires d'un acheteur", q.rank_holders_for_buyer,
-                {"buyer_id": siret.group(0), "year": year})
-    if has("modif", "avenant"):
-        return ("Historique des modifications", q.summarize_modification_history,
-                {"year": year})
-    if has("plusieurs acheteurs", "acheteurs differents"):
-        return ("Titulaires multi-acheteurs", q.find_holders_with_multiple_buyers,
-                {"year": year})
-    if has("variante", "ecritures", "graphie", "plusieurs noms"):
-        return ("Variantes de noms de titulaires", q.find_holder_name_variants, {})
-    if has("manquant", "incoherent", "qualite", "anomalie"):
-        return ("Problèmes de qualité du graphe", q.summarize_graph_data_issues, {})
-    if has("procedure", "nature"):
-        return ("Natures et procédures", q.summarize_nature_and_procedures,
-                {"year": year})
-    if has("cpv", "famille", "montant", "duree"):
-        return ("Montants et durées par famille CPV",
-                q.aggregate_amounts_and_durations_by_cpv, {"year": year})
-    if has("acheteur"):
-        return ("Classement des acheteurs", q.rank_buyers, {"year": year})
-    return None
 
 
 def _plain(obj):
@@ -81,6 +44,7 @@ def main() -> None:
     from neo4j import READ_ACCESS, GraphDatabase
 
     from marchegraph.graph.load_initial_awards import DATASET_ID
+    from marchegraph.queries.dispatch import run
 
     st.set_page_config(page_title="MarchéGraph (démo)")
     st.title("MarchéGraph : démo locale")
@@ -151,11 +115,10 @@ def main() -> None:
                       "m'abstenir plutôt que d'inventer. Voir la liste à gauche.")
             st.write(answer)
         else:
-            label, function, params = plan
             try:
                 with read_session() as s:
-                    response = function(s, **params)
-                answer = f"Question reconnue : {label}."
+                    response = run(s, plan)
+                answer = f"Question reconnue : {plan.label}."
                 st.write(answer)
                 show(response)
             except Exception as exc:
