@@ -8,8 +8,9 @@ covers: ["R4", "R6"]
 sources: ["_bmad-output/initiative-marchegraph-decp/initiative-marchegraph-decp.md"]
 companions: []
 after: ["epic-graphe-connaissance-verifiable"]
-refined: false
+refined: true
 risk: high
+status: in-progress
 ---
 
 # Assistant GraphRAG local évalué
@@ -60,3 +61,32 @@ hallucinations et les coûts.
 
 - Waits on epic 3 because: l'assistant s'appuie sur le graphe interrogeable,
   les réponses de référence et le contrat de preuve établis par l'epic.
+- Decision: 2026-10-29 — Cible : projet complet. Compréhension de la question
+  déterministe ; AD-3 inchangée. Questions prises en charge : les dix
+  questions de référence de l'epic 3.
+- Decision: 2026-10-29 — Une réponse est correcte si son résultat structuré
+  est identique à la référence, ou si l'abstention attendue est effective.
+  Hallucination : tout fait, chiffre ou entité du texte absent du résultat
+  structuré reçu. Coûts : latence et mémoire locales.
+- Decision: 2026-10-29 — Baseline obligatoire : le même modèle local sans
+  graphe. Baseline SQL DuckDB sur le Parquet : option à faire approuver.
+- Decision: 2026-10-29 — Découpage en sept stories approuvé par l'utilisateur
+  (`tickets/tickets.toml`). Le test de capacité de la phase A
+  (`docs/spike-modele-local-resultats.md`, `llama3.1:8b` et `qwen3:8b`,
+  données synthétiques) est le point de départ de la story 1, pas un livrable
+  accepté.
+- Open question: La story 3.9 est en revue ; l'epic 3 doit être clos avant de
+  démarrer cet epic. Résolu le 2026-10-29 : l'epic 3 est clos.
+- Open question: Données d'évaluation : fixtures de l'epic 3 ou snapshot
+  d'origine (SHA-256 `b39257f1…`) ; un snapshot retéléchargé est exclu.
+- Open question: Notation de la baseline sans graphe (texte libre) : manuelle,
+  extraction des chiffres comparée à la référence, ou les deux.
+- Open question: Inclure ou non la baseline SQL DuckDB.
+- Open question: Nombre et rédaction des questions à abstention attendue.
+- Open question: Échec du contrôle des chiffres : repli sur le gabarit
+  déterministe (proposé) ou abstention.
+- Open question: Emplacement du code (`src/marchegraph/queries/` et `app.py`
+  selon l'architecture, contre `graph/queries.py` et `demo_chat.py`
+  aujourd'hui).
+- Open question: Ajouter un modèle d'environ 4 milliards de paramètres au test
+  de la story 1 (0,5 Go de RAM libre observée avec `qwen3:8b` et Neo4j).

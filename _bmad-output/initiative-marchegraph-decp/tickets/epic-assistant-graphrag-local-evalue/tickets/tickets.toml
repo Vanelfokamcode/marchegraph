@@ -1,0 +1,76 @@
+[[entry]]
+id = 1
+type = "story"
+title = "Retenir le modèle local après le test de capacité"
+description = "Étend le test de la phase A aux formes de résultat des dix questions de référence sur données synthétiques, mesure mémoire et latence avec Neo4j et Streamlit démarrés, puis l'utilisateur retient un modèle local ou choisit des réponses uniquement déterministes et revoit R4/R6."
+verify = "Un rapport par modèle candidat présente mémoire, latence, chiffres manquants ou inventés et réponses brutes, sans verdict ; la décision écrite de l'utilisateur est consignée."
+covers = ["R4", "R6"]
+after = ["epic-graphe-connaissance-verifiable"]
+hitl = true
+risk = "high"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Reconnaître les dix questions de façon déterministe ou s'abstenir"
+description = "Déplace la compréhension des questions hors de l'interface vers un module dépendant des contrats, couvre les dix questions de référence (dont Q7 thème et région de l'acheteur, et la distinction Q3/Q8), extrait année, identifiant d'acheteur, thème et région, et s'abstient pour toute autre question."
+verify = "Des tests sans Neo4j associent une table de formulations à la question et aux paramètres attendus, et vérifient l'abstention sur des questions hors périmètre."
+covers = ["R4"]
+after = []
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 3
+type = "story"
+title = "Formuler la réponse en français avec contrôle des chiffres"
+description = "Produit une réponse déterministe par gabarit, puis une formulation par le modèle local retenu, appelé en loopback uniquement et ne recevant que le résultat structuré et ses limites ; un contrôle rejette tout texte contenant un chiffre absent du résultat et revient au gabarit. Les références de preuve proviennent toujours de la requête."
+verify = "Avec un faux client de modèle, un chiffre inventé déclenche le repli, les références de preuve restent identiques à celles de la requête et une URL de modèle hors loopback est refusée."
+covers = ["R4"]
+after = [1, 2]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 4
+type = "story"
+title = "Intégrer l'assistant dans l'interface locale"
+description = "L'interface Streamlit locale affiche la réponse en français, le tableau de résultat, les limites et les preuves, avec ou sans modèle, en lecture seule et sur loopback."
+verify = "En exécution locale, les dix questions de référence renvoient réponse, preuves ou limites, et une question hors sujet provoque une abstention."
+covers = ["R4"]
+after = [3]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 5
+type = "story"
+title = "Constituer le jeu d'évaluation et mesurer la baseline sans graphe"
+description = "Établit le jeu d'évaluation (dix questions de référence avec leur résultat attendu issu de l'epic 3, et questions à abstention attendue) puis mesure la baseline obligatoire : le même modèle local, sans graphe, ne recevant que la question. Rapporte correction, hallucinations, latence et mémoire."
+verify = "Un rapport de baseline par question est produit localement et l'utilisateur fixe le seuil de réussite après l'avoir lu."
+covers = ["R6"]
+after = [1]
+hitl = true
+risk = "high"
+
+[[entry]]
+id = 6
+type = "story"
+title = "Évaluer l'assistant face à la baseline"
+description = "Exécute l'assistant sur le même jeu d'évaluation ; une réponse est correcte si son résultat structuré est identique à la référence ou si l'abstention attendue est effective. Rapporte les hallucinations du texte (tout fait absent du résultat reçu) et les coûts locaux."
+verify = "Un rapport comparatif par question confronte l'assistant à la baseline et au seuil fixé en story 5."
+covers = ["R6"]
+after = [4, 5]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 7
+type = "story"
+title = "Vérifier l'assistant de bout en bout"
+description = "Nettoie les dettes techniques reportées par les stories précédentes et vérifie localement l'ensemble, sans appel distant ni donnée DECP ou résultat dérivé dans Git."
+verify = "Une exécution locale sur fixtures confirme les dix questions, l'abstention et la reproductibilité des rapports des stories 5 et 6 ; la suite de tests passe."
+covers = ["R4", "R6"]
+after = [1, 2, 3, 4, 5, 6]
+hitl = false
+risk = "medium"

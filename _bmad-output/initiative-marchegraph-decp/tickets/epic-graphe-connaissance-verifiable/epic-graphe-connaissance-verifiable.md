@@ -10,7 +10,7 @@ companions: ["_bmad-output/initiative-marchegraph-decp/architecture-marchegraph-
 after: ["epic-fondation-decp-reproductible", "epic-resolution-identites-titulaires"]
 refined: true
 risk: high
-status: in-progress
+status: done
 ---
 
 # Graphe de connaissance vérifiable
@@ -178,3 +178,5 @@ les réponses de référence sont répétables et explicables.
   comme des attributions initiales. Comme pour les marchés initiaux, conserver
   les valeurs distinctes et signaler séparément les valeurs manquantes au lieu
   de choisir arbitrairement une ligne source.
+- Decision: 2026-10-29 — L'utilisateur accepte la story 3.9 et clôt l'epic ;
+  les stories 3.1 à 3.9 sont terminées.

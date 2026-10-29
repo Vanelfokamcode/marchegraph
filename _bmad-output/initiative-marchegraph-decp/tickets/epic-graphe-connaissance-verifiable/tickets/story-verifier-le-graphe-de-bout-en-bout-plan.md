@@ -1,7 +1,7 @@
 ---
 title: "Vérifier le graphe de bout en bout"
 ticket: 9
-status: built
+status: done
 ---
 
 # Vérification locale de bout en bout
@@ -33,3 +33,7 @@ status: built
 - Le contrôle local confirme qu'aucun nœud de fixture ne reste dans Neo4j.
 - `compileall` et `git diff --check` passent ; aucun résultat dérivé n'est
   conservé dans le dépôt.
+- 2026-10-29 : l'utilisateur accepte la story après les corrections de revue.
+  Contrôle de clôture sur le second poste (Windows) : suite standard
+  (42 tests, intégration ignorée sans `NEO4J_PASSWORD`), `compileall` et
+  `git diff --check` passent ; l'intégration Neo4j n'y a pas été relancée.
