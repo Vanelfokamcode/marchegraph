@@ -12,10 +12,12 @@ restent les sources de vérité détaillées.
 - Initiative BMAD : [`_bmad-output/initiative-marchegraph-decp/`](./_bmad-output/initiative-marchegraph-decp/).
 - État BMAD au dernier contrôle : epics 1 à 3 terminées ; epic 4 raffinée
   en sept stories (approuvées le 2026-10-29) ; stories 4.1 (`phi4-mini:3.8b`
-  retenu), 4.2 (reconnaissance déterministe) et 4.3 (formulation contrôlée,
-  abstention si le contrôle échoue) terminées.
-- Prochaine action : story 4.4 (intégration dans l'interface locale) et faire
-  trancher les questions ouvertes listées dans le fichier de l'epic 4.
+  retenu), 4.2 (reconnaissance déterministe), 4.3 (formulation contrôlée,
+  abstention si le contrôle échoue) et 4.4 (assistant dans la démo)
+  terminées.
+- Prochaine action : story 4.5 (jeu d'évaluation et baseline sans graphe),
+  après décision de l'utilisateur sur les données d'évaluation et la
+  notation de la baseline (questions ouvertes du fichier de l'epic 4).
 - Ne pas marquer une story acceptée ni un epic terminé sans confirmation
   explicite de l'utilisateur.
 - Les données DECP, les résultats dérivés, les exports et les labels de revue
@@ -293,7 +295,7 @@ story `review`.
 | 1 — Fondation DECP reproductible | `done` | Stories 1.1 et 1.2 `done`. |
 | 2 — Résolution des identités titulaires | `done` | Stories 2.1 et 2.2 `done`. |
 | 3 — Graphe de connaissance vérifiable | `done` | Stories 3.1–3.9 `done`. |
-| 4 — Assistant GraphRAG local évalué | `in-progress` | Raffinée : stories 4.1–4.7 ; 4.1 à 4.3 `done`. |
+| 4 — Assistant GraphRAG local évalué | `in-progress` | Raffinée : stories 4.1–4.7 ; 4.1 à 4.4 `done`. |
 
 Étapes restantes :
 

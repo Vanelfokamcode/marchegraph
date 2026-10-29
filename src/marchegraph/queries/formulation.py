@@ -66,11 +66,20 @@ def _plain(obj):
     return obj
 
 
+def _shorten(value):
+    """Listes internes limitées à MAX_MODEL_ROWS éléments pour garder un prompt court."""
+    if isinstance(value, dict):
+        return {key: _shorten(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_shorten(item) for item in value[:MAX_MODEL_ROWS]]
+    return value
+
+
 def payload(response: QueryResponse) -> dict:
     """Valeurs et limites du résultat, sans les références de preuve."""
     rows = response.rows[:MAX_MODEL_ROWS]
     return {
-        "rows": [_plain(row.result) for row in rows],
+        "rows": [_shorten(_plain(row.result)) for row in rows],
         "lignes_fournies": len(rows),
         "lignes_total": len(response.rows),
         "limites": list(response.limitations),

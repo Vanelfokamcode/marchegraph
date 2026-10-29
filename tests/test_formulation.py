@@ -158,6 +158,17 @@ class FormulationTests(unittest.TestCase):
         self.assertEqual(_plain(Decimal("37.26956521739130434782608696")), "37.27")
         self.assertEqual(_plain(Decimal("81234567.50")), "81234567.50")
 
+    def test_inner_lists_are_shortened_for_the_model(self) -> None:
+        buyers = tuple(f"{i:014d}" for i in range(40))
+        response = QueryResponse(
+            question_id=6,
+            rows=(QueryRow(MultiBuyerHolder("SIRET", "00000000000031", ("T",),
+                                            buyers, 40), EVIDENCE),),
+        )
+        row = payload(response)["rows"][0]
+        self.assertEqual(len(row["buyer_ids"]), 10)
+        self.assertEqual(row["market_count"], 40)
+
 
 class LocalModelTests(unittest.TestCase):
     def test_only_loopback_http_urls_are_accepted(self) -> None:
