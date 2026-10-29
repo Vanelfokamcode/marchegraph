@@ -84,7 +84,11 @@ hallucinations et les coûts.
 - Open question: Inclure ou non la baseline SQL DuckDB.
 - Open question: Nombre et rédaction des questions à abstention attendue.
 - Open question: Échec du contrôle des chiffres : repli sur le gabarit
-  déterministe (proposé) ou abstention.
+  déterministe (proposé) ou abstention. Résolu le 2026-10-29 : abstention de
+  formulation ; tableau, limites et preuves restent affichés avec un
+  avertissement.
+- Decision: 2026-10-29 — Les stories 3 et 4 passent à `done` et sont
+  commitées dès que leurs tests passent, sans validation intermédiaire.
 - Open question: Emplacement du code (`src/marchegraph/queries/` et `app.py`
   selon l'architecture, contre `graph/queries.py` et `demo_chat.py`
   aujourd'hui). Résolu le 2026-10-29 (story 2) : reconnaissance et
