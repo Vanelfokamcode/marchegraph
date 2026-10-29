@@ -295,7 +295,7 @@ story `review`.
 | 1 — Fondation DECP reproductible | `done` | Stories 1.1 et 1.2 `done`. |
 | 2 — Résolution des identités titulaires | `done` | Stories 2.1 et 2.2 `done`. |
 | 3 — Graphe de connaissance vérifiable | `done` | Stories 3.1–3.9 `done`. |
-| 4 — Assistant GraphRAG local évalué | `in-progress` | Raffinée : stories 4.1–4.7 ; 4.1 à 4.5 `done`. |
+| 4 — Assistant GraphRAG local évalué | `in-progress` | Raffinée : stories 4.1–4.7 `done` (seuil non atteint en 4.6 sur le critère hallucinations). |
 
 Étapes restantes :
 

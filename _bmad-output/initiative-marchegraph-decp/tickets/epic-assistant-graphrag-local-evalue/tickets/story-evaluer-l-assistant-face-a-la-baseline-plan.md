@@ -1,7 +1,7 @@
 ---
 title: "Évaluer l'assistant face à la baseline"
 ticket: 6
-status: built
+status: done
 ---
 
 # Évaluation comparative de l'assistant
@@ -22,7 +22,9 @@ status: built
 - Baselines du même run : SQL 8 / 10 et 10 / 10 ; modèle sans graphe 0 / 10 et
   6 / 10.
 
-## Suite à décider
+## Clôture
 
-- Clore la story avec le seuil non atteint, ou renforcer le contrôle de
-  formulation (story 4.3) puis remesurer.
+- 2026-10-29 : l'utilisateur clôt la story avec le seuil non atteint sur le
+  critère « aucune hallucination affichée ». Le renforcement du contrôle
+  (noms propres, rattachement des valeurs aux lignes) reste une piste non
+  engagée.
