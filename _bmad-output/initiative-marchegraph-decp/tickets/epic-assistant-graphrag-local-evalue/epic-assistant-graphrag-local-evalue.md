@@ -79,10 +79,15 @@ hallucinations et les coûts.
   démarrer cet epic. Résolu le 2026-10-29 : l'epic 3 est clos.
 - Open question: Données d'évaluation : fixtures de l'epic 3 ou snapshot
   d'origine (SHA-256 `b39257f1…`) ; un snapshot retéléchargé est exclu.
+  Résolu le 2026-10-29 : fixtures de l'epic 3.
 - Open question: Notation de la baseline sans graphe (texte libre) : manuelle,
-  extraction des chiffres comparée à la référence, ou les deux.
-- Open question: Inclure ou non la baseline SQL DuckDB.
+  extraction des chiffres comparée à la référence, ou les deux. Résolu le
+  2026-10-29 : extraction automatique, puis validation par l'utilisateur.
+- Open question: Inclure ou non la baseline SQL DuckDB. Résolu le
+  2026-10-29 : incluse dans la story 5.
 - Open question: Nombre et rédaction des questions à abstention attendue.
+  Résolu le 2026-10-29 : dix questions proposées par l'agent, validées par
+  l'utilisateur.
 - Open question: Échec du contrôle des chiffres : repli sur le gabarit
   déterministe (proposé) ou abstention. Résolu le 2026-10-29 : abstention de
   formulation ; tableau, limites et preuves restent affichés avec un
