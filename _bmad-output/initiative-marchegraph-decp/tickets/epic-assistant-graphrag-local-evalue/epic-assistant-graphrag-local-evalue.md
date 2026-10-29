@@ -88,6 +88,10 @@ hallucinations et les coûts.
 - Open question: Nombre et rédaction des questions à abstention attendue.
   Résolu le 2026-10-29 : dix questions proposées par l'agent, validées par
   l'utilisateur.
+- Decision: 2026-10-29 — Story 5 : seuil de réussite de l'assistant fixé
+  après lecture des baselines (`docs/evaluation-baselines.md`) : au moins
+  9 / 10 questions de référence correctes, 10 / 10 abstentions correctes et
+  aucune hallucination dans les textes affichés.
 - Open question: Échec du contrôle des chiffres : repli sur le gabarit
   déterministe (proposé) ou abstention. Résolu le 2026-10-29 : abstention de
   formulation ; tableau, limites et preuves restent affichés avec un

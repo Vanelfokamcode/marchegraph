@@ -1,7 +1,7 @@
 ---
 title: "Constituer le jeu d'évaluation et mesurer la baseline sans graphe"
 ticket: 5
-status: in-progress
+status: done
 ---
 
 # Jeu d'évaluation et baselines
@@ -32,7 +32,11 @@ status: in-progress
   baseline SQL sur le Parquet des fixtures, notation structurée et textuelle.
 - Suite complète : 69 tests, dont l'intégration Neo4j locale.
 
-## Reste à faire
+## Résultat
 
-- Exécution locale par l'utilisateur, rapport de baseline, validation des
-  libellés et fixation du seuil par l'utilisateur.
+- Rapport : `docs/evaluation-baselines.md`. Baseline SQL : 8 / 10 références
+  (Q4 et Q10 différentes), 10 / 10 abstentions. Modèle sans graphe : 0 / 10,
+  6 / 10, 6 réponses avec hallucination après validation.
+- Décision de l'utilisateur (2026-10-29) : corrections de notation
+  acceptées ; seuil de l'assistant ≥ 9 / 10 références, 10 / 10 abstentions,
+  0 hallucination affichée.
