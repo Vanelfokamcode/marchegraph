@@ -90,3 +90,12 @@ hallucinations et les coûts.
   aujourd'hui).
 - Open question: Ajouter un modèle d'environ 4 milliards de paramètres au test
   de la story 1 (0,5 Go de RAM libre observée avec `qwen3:8b` et Neo4j).
+  Résolu le 2026-10-29 : `qwen3:4b-instruct` et `phi4-mini:3.8b` testés.
+- Decision: 2026-10-29 — Story 1 : l'utilisateur retient `phi4-mini:3.8b`
+  (3,1 Go chargés, 5 à 16 s par cas sur CPU, aucun chiffre inventé en
+  chiffres) pour la durée et la mémoire. Le même modèle sert à la baseline
+  sans graphe.
+- Note pour la story 3: le test a montré des erreurs que le contrôle des
+  chiffres ne voit pas : nombres écrits en lettres (« trois acheteurs » au
+  lieu de deux) et fausses absences (« Aucun résultat n'est disponible » alors
+  que le résultat contient des lignes).
