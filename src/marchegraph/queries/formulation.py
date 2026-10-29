@@ -16,11 +16,15 @@ from marchegraph.graph.contracts import QueryResponse
 
 Generate = Callable[[str], str]
 
+MAX_MODEL_ROWS = 10
+
 INSTRUCTIONS = (
-    "Tu rédiges en français. Réponds UNIQUEMENT à partir du résultat JSON fourni. "
+    "Tu rédiges en français, en phrases, sans JSON ni code. "
+    "Réponds UNIQUEMENT à partir du résultat JSON fourni. "
     "N'ajoute aucun fait, aucun chiffre et aucun nom absents du JSON. "
     "Recopie les nombres exactement, en chiffres, sans les arrondir. "
-    "Signale les limites indiquées. Ne dis jamais qu'aucun résultat n'est "
+    "Signale les limites indiquées. Si toutes les lignes ne sont pas fournies, "
+    "dis que tu présentes les premières. Ne dis jamais qu'aucun résultat n'est "
     "disponible si la liste des lignes contient des éléments. "
     "Réponds en trois phrases au maximum."
 )
@@ -51,6 +55,9 @@ def _plain(obj):
     if is_dataclass(obj) and not isinstance(obj, type):
         obj = asdict(obj)
     if isinstance(obj, Decimal):
+        # Le modèle recopie mal les longues décimales : 2 chiffres suffisent à la phrase.
+        if obj.as_tuple().exponent < -2:
+            obj = obj.quantize(Decimal("0.01"))
         return str(obj)
     if isinstance(obj, dict):
         return {key: _plain(value) for key, value in obj.items()}
@@ -61,8 +68,11 @@ def _plain(obj):
 
 def payload(response: QueryResponse) -> dict:
     """Valeurs et limites du résultat, sans les références de preuve."""
+    rows = response.rows[:MAX_MODEL_ROWS]
     return {
-        "rows": [_plain(row.result) for row in response.rows],
+        "rows": [_plain(row.result) for row in rows],
+        "lignes_fournies": len(rows),
+        "lignes_total": len(response.rows),
         "limites": list(response.limitations),
     }
 
@@ -94,6 +104,8 @@ def check(text: str, data: dict, question: str) -> tuple[str, ...]:
     """Problèmes détectés dans un texte du modèle ; vide si le texte est accepté."""
     if not text.strip():
         return ("réponse vide",)
+    if "```" in text or text.lstrip()[:1] in "{[":
+        return ("réponse non rédigée (JSON ou code)",)
     allowed = (
         _numbers(json.dumps(data, ensure_ascii=False))
         | _numbers(question)

@@ -14,7 +14,7 @@ from marchegraph.graph.contracts import (
     QueryResponse,
     QueryRow,
 )
-from marchegraph.queries.formulation import check, formulate, payload
+from marchegraph.queries.formulation import _plain, check, formulate, payload
 from marchegraph.queries.local_model import LocalModelURLError, OllamaClient
 
 
@@ -130,6 +130,33 @@ class FormulationTests(unittest.TestCase):
             check("En 2025, le total est de 81 234 567,50.", data, "Montant en 2025 ?"),
             (),
         )
+
+    def test_json_or_code_output_leads_to_abstention(self) -> None:
+        for text in ('```json\n{"marches": 1234}\n```', '{"marches": 1234}'):
+            with self.subTest(text=text):
+                result = formulate(QUESTION, LABEL, BUYERS, FakeModel(text))
+                self.assertEqual(result.source, "abstention")
+                self.assertEqual(result.problems,
+                                 ("réponse non rédigée (JSON ou code)",))
+
+    def test_model_receives_at_most_ten_rows_with_total(self) -> None:
+        many = QueryResponse(
+            question_id=1,
+            rows=tuple(
+                QueryRow(BuyerRanking(f"{i:014d}", (f"Acheteur {i}",), 100 + i), EVIDENCE)
+                for i in range(25)
+            ),
+        )
+        data = payload(many)
+        self.assertEqual(len(data["rows"]), 10)
+        self.assertEqual((data["lignes_fournies"], data["lignes_total"]), (10, 25))
+        model = FakeModel("Voici les 10 premiers acheteurs sur 25.")
+        self.assertEqual(formulate(QUESTION, LABEL, many, model).source, "modele")
+        self.assertNotIn("Acheteur 24", model.prompts[0])
+
+    def test_long_decimals_are_rounded_for_the_model(self) -> None:
+        self.assertEqual(_plain(Decimal("37.26956521739130434782608696")), "37.27")
+        self.assertEqual(_plain(Decimal("81234567.50")), "81234567.50")
 
 
 class LocalModelTests(unittest.TestCase):
