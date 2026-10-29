@@ -1,30 +1,16 @@
 """Démo locale : questions en français vers les requêtes préparées.
 
-Déterministe, sans LLM. Neo4j en lecture seule, loopback uniquement.
+Reconnaissance déterministe ; formulation par le modèle local si
+`MARCHEGRAPH_LLM_MODEL` est défini, contrôlée, sinon gabarit.
+Neo4j en lecture seule, loopback uniquement.
 """
 from __future__ import annotations
 
 import os
 from dataclasses import asdict, is_dataclass
 from decimal import Decimal
-from urllib.parse import urlparse
 
-from marchegraph.queries.interpretation import interpret
-
-LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
-
-SUPPORTED = [
-    "Quels acheteurs ont attribué le plus de marchés en 2025 ?",
-    "Quels titulaires reviennent le plus chez l'acheteur 12345678901234 ?",
-    "Quel montant total par famille CPV ?",
-    "Quels marchés ont été modifiés en 2025 ?",
-    "Quelles procédures et natures de marché sont utilisées ?",
-    "Quels titulaires travaillent avec plusieurs acheteurs ?",
-    "Quels marchés concernent la voirie en Bretagne ?",
-    "Quelle durée moyenne par famille CPV ?",
-    "Quels fournisseurs ont plusieurs écritures de leur nom ?",
-    "Quelles données sont manquantes ou incohérentes ?",
-]
+from marchegraph.queries.assistant import ABSTENTION_TEXT, EXAMPLES
 
 
 def _plain(obj):
@@ -44,11 +30,16 @@ def main() -> None:
     from neo4j import READ_ACCESS, GraphDatabase
 
     from marchegraph.graph.load_initial_awards import DATASET_ID
-    from marchegraph.queries.dispatch import run
+    from marchegraph.graph.neo4j_config import (
+        LocalNeo4jURLError,
+        validate_local_neo4j_uri,
+    )
+    from marchegraph.queries.assistant import answer as ask
+    from marchegraph.queries.assistant import model_from_env
+    from marchegraph.queries.local_model import LocalModelURLError
 
     st.set_page_config(page_title="MarchéGraph (démo)")
     st.title("MarchéGraph : démo locale")
-    st.caption("Réponses déterministes, sans LLM. Requêtes préparées, lecture seule.")
 
     password = os.environ.get("NEO4J_PASSWORD")
     uri = os.environ.get("NEO4J_URI", "bolt://127.0.0.1:7687")
@@ -56,9 +47,15 @@ def main() -> None:
     if not password:
         st.error("NEO4J_PASSWORD doit être défini dans l'environnement.")
         st.stop()
-    if urlparse(uri).hostname not in LOCAL_HOSTS:
-        st.error("Seule une URI Neo4j locale (loopback) est acceptée.")
+    try:
+        validate_local_neo4j_uri(uri)
+        generate = model_from_env()
+    except (LocalNeo4jURLError, LocalModelURLError) as error:
+        st.error(str(error))
         st.stop()
+    mode = (f"formulation par le modèle local {generate.model}, contrôlée"
+            if generate else "réponses par gabarit, sans modèle")
+    st.caption(f"Requêtes préparées en lecture seule ; {mode}.")
 
     @st.cache_resource
     def get_driver():
@@ -81,7 +78,7 @@ def main() -> None:
         except Exception as exc:  # démo : on affiche l'erreur telle quelle
             st.error(f"Connexion impossible : {exc}")
         st.subheader("Questions prises en charge")
-        for example in SUPPORTED:
+        for example in EXAMPLES:
             st.markdown(f"- {example}")
 
     def show(response) -> None:
@@ -109,21 +106,31 @@ def main() -> None:
     with st.chat_message("user"):
         st.write(question)
     with st.chat_message("assistant"):
-        plan = interpret(question)
-        if plan is None:
-            answer = ("Je ne sais pas répondre à cette question : je préfère "
-                      "m'abstenir plutôt que d'inventer. Voir la liste à gauche.")
-            st.write(answer)
+        try:
+            with read_session() as s:
+                result = ask(question, s, generate)
+        except Exception as exc:
+            answer = f"Erreur pendant la requête : {exc}"
+            st.error(answer)
         else:
-            try:
-                with read_session() as s:
-                    response = run(s, plan)
-                answer = f"Question reconnue : {plan.label}."
+            if result is None:
+                answer = f"{ABSTENTION_TEXT} Voir la liste à gauche."
                 st.write(answer)
-                show(response)
-            except Exception as exc:
-                answer = f"Erreur pendant la requête : {exc}"
-                st.error(answer)
+            else:
+                st.caption(f"Question reconnue : {result.interpretation.label}.")
+                formulation = result.formulation
+                if formulation.text:
+                    answer = formulation.text
+                    st.write(answer)
+                else:
+                    answer = ("Je m'abstiens de formuler une réponse : le texte "
+                              "proposé n'a pas passé le contrôle. Le résultat et "
+                              "ses preuves sont affichés ci-dessous.")
+                    st.warning(answer)
+                    with st.expander("Motifs du contrôle"):
+                        for problem in formulation.problems:
+                            st.markdown(f"- {problem}")
+                show(result.response)
     history.append(("user", question))
     history.append(("assistant", answer))
 
