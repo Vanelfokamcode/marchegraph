@@ -100,7 +100,8 @@ def answer_guided(
 
     response = run_catalogue(session, query)
     formulation = formulate(description, query.label, response, generate)
-    return AssistantAnswer(Interpretation(CATALOGUE_QUESTION_ID, query.label),
+    return AssistantAnswer(Interpretation(CATALOGUE_QUESTION_ID, query.label,
+                                          {"query": query}),
                            response, formulation)
 
 

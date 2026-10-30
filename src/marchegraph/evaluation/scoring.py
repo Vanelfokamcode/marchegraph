@@ -11,6 +11,7 @@ from marchegraph.queries.formulation import _normalize, _numbers
 
 # Faits essentiels de chaque ligne de résultat, par question de référence.
 CORE_FACTS: dict[int, Callable] = {
+    0: lambda r: (r.group, r.value, r.market_count),
     1: lambda r: (r.buyer_id, r.market_count),
     2: lambda r: (r.identifier_value, r.market_count),
     3: lambda r: (r.family_code, r.market_count, r.amount_total),
