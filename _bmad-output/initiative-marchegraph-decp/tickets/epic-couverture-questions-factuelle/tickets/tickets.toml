@@ -1,0 +1,87 @@
+[[entry]]
+id = 1
+type = "story"
+title = "Composer les questions sur une liste fermée de mesures, regroupements et filtres"
+description = "Définit un catalogue approuvé de mesures (nombre de marchés, montant total, durée moyenne, nombre de modifications), de regroupements (acheteur, titulaire, famille CPV, région, procédure, nature, année) et de filtres (année, région, acheteur, titulaire, famille CPV, procédure, nature, tranche de montant, thème), et un constructeur qui assemble des fragments Cypher préparés avec paramètres liés. Les règles de l'epic 3 (uid distincts, valeurs multiples, absences) s'appliquent à chaque combinaison ; les combinaisons non prises en charge sont refusées explicitement."
+verify = "Sur fixtures, chaque combinaison du catalogue renvoie un résultat structuré avec preuves et limites ou un refus explicite ; aucune valeur saisie n'est concaténée dans une requête ; les dix questions de l'epic 4 donnent des résultats identiques."
+covers = ["R4"]
+after = ["epic-assistant-graphrag-local-evalue"]
+hitl = true
+risk = "high"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Résoudre les acheteurs et titulaires cités par leur nom avec choix explicite"
+description = "Ajoute des index plein texte Neo4j (BM25, sans accents) sur les noms d'acheteurs et de titulaires ; une mention de la question produit des candidats avec identifiant exact et score ; un nom identique ou un candidat nettement en tête est retenu, sinon l'utilisateur choisit dans une liste ou l'assistant s'abstient. Le score n'est jamais présenté comme un fait ; la requête utilise l'identifiant choisi. Premier usage : la question 2 accepte un acheteur cité par son nom."
+verify = "Sur fixtures, un nom exact, une variante proche, un nom ambigu et un nom inexistant donnent respectivement : résolution, résolution, demande de choix, abstention ; la requête exécutée reçoit l'identifiant exact et ses preuves."
+covers = ["R4"]
+after = [1]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 3
+type = "story"
+title = "Proposer des exemples et une saisie guidée issus des données"
+description = "Calcule au démarrage, en lecture seule, les valeurs les plus fréquentes de chaque dimension (années, régions, familles CPV, acheteurs, procédures) et en tire des questions d'exemple et une saisie guidée (listes et autocomplétion) dans l'interface locale."
+verify = "Les exemples affichés changent avec le contenu du graphe de fixtures, chacun est reconnu et renvoie un résultat avec preuves ; la saisie guidée n'émet que des valeurs du catalogue."
+covers = ["R4"]
+after = [1, 2]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 4
+type = "story"
+title = "Générer l'évaluation de couverture et refixer le seuil"
+description = "Génère sur fixtures un jeu d'évaluation à partir du catalogue (combinaisons × valeurs tirées des fixtures, paraphrases, entités inexistantes, combinaisons invalides) avec référence calculée par requête ; rapporte couverture, précision de reconnaissance, abstentions, hallucinations affichées et latence, pour l'assistant et les baselines de l'epic 4. L'utilisateur fixe le seuil après lecture."
+verify = "Le rapport par catégorie est reproductible localement et le seuil décidé par l'utilisateur est consigné."
+covers = ["R6"]
+after = [1, 2, 3]
+hitl = true
+risk = "high"
+
+[[entry]]
+id = 5
+type = "story"
+title = "Comprendre les formulations libres par le modèle en structure fermée"
+description = "Après modification approuvée de la décision 2 de l'epic 4 et complément d'AD-3 : en mode hybride (règles d'abord), le modèle local remplit une structure JSON contrainte par schéma (mesure, regroupement, filtres, mentions d'entités) ; l'application la valide contre le catalogue et résout les entités par la story 2. Le modèle n'écrit ni n'exécute de Cypher ; toute structure invalide mène à l'abstention."
+verify = "Sur le jeu de la story 4, la couverture et la précision avec et sans le modèle sont comparées ; une structure hors catalogue ou une entité introuvable donne une abstention ; aucune requête ne contient de texte produit par le modèle."
+covers = ["R4", "R6"]
+after = [4]
+hitl = true
+risk = "high"
+
+[[entry]]
+id = 6
+type = "story"
+title = "Rechercher les thèmes de façon hybride, limitée aux candidats"
+description = "Si l'utilisateur l'approuve : index vectoriel Neo4j sur l'objet des marchés, calculé localement, combiné à l'index plein texte par fusion de rangs ; le résultat est une liste de marchés candidats avec scores, filtrée par seuil, puis traitée par les requêtes préparées ; l'interface indique que le thème est approché. Précision mesurée sur un échantillon étiqueté par l'utilisateur."
+verify = "Sur un échantillon étiqueté manuellement, la précision et le rappel des marchés retenus sont rapportés contre la recherche par sous-chaîne actuelle ; aucun texte de réponse ne s'appuie sur un marché sous le seuil."
+covers = ["R4", "R6"]
+after = [4]
+hitl = true
+risk = "high"
+
+[[entry]]
+id = 7
+type = "story"
+title = "Vérifier la couverture élargie de bout en bout"
+description = "Nettoie les dettes reportées et vérifie localement l'ensemble : catalogue, résolution d'entités, suggestions, évaluation, sans appel distant ni donnée DECP dans Git."
+verify = "Une exécution locale sur fixtures confirme le catalogue, la résolution d'entités, les abstentions et la reproductibilité des rapports ; la suite de tests passe."
+covers = ["R4", "R6"]
+after = [1, 2, 3, 4]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 8
+type = "story"
+title = "Reconnaître les catégories d'achat par leur libellé CPV"
+description = "Reportée par décision de l'utilisateur (2026-10-30). Charge localement la nomenclature CPV officielle de l'UE (libellés français), affiche les libellés à côté des codes et résout une catégorie citée par son nom vers un code ou une famille, avec choix explicite."
+verify = "Les résultats par famille CPV affichent leur libellé ; « nettoyage » propose les familles CPV correspondantes ou s'abstient ; la limite « catégorie déclarée par l'acheteur » est affichée."
+covers = ["R4"]
+after = [2]
+hitl = true
+risk = "low"

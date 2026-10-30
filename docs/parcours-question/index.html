@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MarchéGraph : le voyage d'une question, de bout en bout</title>
+<style>
+  :root { --bleu:#3b5bdb; --vert:#2f9e44; --orange:#e8590c; --violet:#7048e8; --gris:#495057; --rouge:#c92a2a; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Arial, sans-serif; margin: 0; color: #212529; background: #f8f9fa; line-height: 1.55; }
+  header { background: #1c2b5a; color: #fff; padding: 36px 48px; }
+  header h1 { margin: 0 0 8px; font-size: 30px; }
+  header p { margin: 4px 0; max-width: 980px; opacity: .92; }
+  nav { background: #fff; border-bottom: 1px solid #dee2e6; padding: 10px 48px; position: sticky; top: 0; z-index: 5; }
+  nav a { margin-right: 18px; color: var(--bleu); text-decoration: none; font-weight: 600; font-size: 14px; }
+  main { max-width: 1240px; margin: 0 auto; padding: 24px 48px 80px; }
+  section { background: #fff; border-radius: 14px; padding: 28px 32px; margin: 26px 0; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  h2 { margin-top: 0; font-size: 24px; }
+  h3 { font-size: 18px; margin-top: 28px; }
+  .lede { font-size: 17px; color: #343a40; }
+  .analogie { border-left: 5px solid var(--violet); background: #f3f0ff; padding: 12px 18px; border-radius: 8px; margin: 16px 0; }
+  .humain { border-left: 5px solid var(--orange); background: #fff4e6; padding: 12px 18px; border-radius: 8px; margin: 16px 0; }
+  .garde { border-left: 5px solid var(--vert); background: #ebfbee; padding: 12px 18px; border-radius: 8px; margin: 16px 0; }
+  .attention { border-left: 5px solid var(--rouge); background: #fff5f5; padding: 12px 18px; border-radius: 8px; margin: 16px 0; }
+  .badge { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 10px; color: #fff; margin-right: 6px; vertical-align: middle; }
+  .b-humain { background: var(--orange); } .b-ia { background: var(--violet); } .b-code { background: var(--bleu); } .b-donnee { background: var(--vert); }
+  details { background: #f1f3f5; border-radius: 8px; padding: 10px 16px; margin: 12px 0; }
+  details summary { cursor: pointer; font-weight: 600; color: var(--gris); }
+  code, pre { font-family: Consolas, "Courier New", monospace; font-size: 13px; }
+  pre { background: #212529; color: #f8f9fa; padding: 14px; border-radius: 8px; overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 14px; }
+  th, td { border: 1px solid #dee2e6; padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: #f1f3f5; }
+  .svgbox { overflow-x: auto; margin: 18px 0; border: 1px solid #e9ecef; border-radius: 10px; background: #fff; }
+  .steps { counter-reset: s; }
+  .step { position: relative; padding: 14px 18px 14px 64px; border: 1px solid #e9ecef; border-radius: 10px; margin: 12px 0; background: #fff; }
+  .step::before { counter-increment: s; content: counter(s); position: absolute; left: 16px; top: 14px; width: 32px; height: 32px; border-radius: 50%; background: var(--bleu); color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .legende span { margin-right: 14px; font-size: 13px; }
+  footer { text-align: center; color: #868e96; font-size: 13px; padding: 20px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Le voyage d'une question, de bout en bout</h1>
+  <p>On suit une seule question posée à l'assistant MarchéGraph, depuis le clavier de l'utilisateur jusqu'à la donnée publique d'origine, en passant par tout ce qui l'a rendue possible : l'équipe d'agents qui a conçu le système, le chemin des données, le graphe Neo4j, les vérifications, et chaque moment où un humain a décidé.</p>
+  <p><strong>La question :</strong> « Quels marchés concernent la voirie en Bretagne ? »</p>
+</header>
+
+<nav>
+  <a href="#vue">Vue d'ensemble</a>
+  <a href="#conception">1. Concevoir</a>
+  <a href="#donnees">2. Préparer les données</a>
+  <a href="#graphe">3. Le graphe</a>
+  <a href="#verif">4. Vérifier le modèle</a>
+  <a href="#question">5. Le moment de la question</a>
+  <a href="#reponse">6. La réponse</a>
+  <a href="#humains">7. Les humains</a>
+  <a href="#glossaire">Glossaire</a>
+</nav>
+
+<main>
+
+<!-- ===================================================== -->
+<section id="vue">
+  <h2>Vue d'ensemble : trois temps</h2>
+  <p class="lede">Une réponse de quelques secondes repose sur un travail fait <em>avant</em>. Il y a trois temps, qui ne se passent pas au même moment.</p>
+
+  <div class="svgbox">
+  <svg width="1160" height="330" viewBox="0 0 1160 330" font-family="Segoe UI, Arial" font-size="14">
+    <defs><marker id="m0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#444"/></marker></defs>
+    <rect x="20" y="40" width="340" height="230" rx="14" fill="#f3f0ff" stroke="#7048e8"/>
+    <text x="190" y="72" text-anchor="middle" font-weight="bold" font-size="17">Temps 1 : concevoir</text>
+    <text x="190" y="98" text-anchor="middle">une seule fois, il y a quelques jours</text>
+    <text x="40" y="132">• agents BMAD : brief, PRD, architecture,</text>
+    <text x="52" y="152">découpage en epics et stories</text>
+    <text x="40" y="176">• le développement, story par story</text>
+    <text x="40" y="200">• tests, évaluation</text>
+    <text x="40" y="232" fill="#e8590c" font-weight="bold">✋ l'humain valide chaque étape</text>
+
+    <rect x="410" y="40" width="340" height="230" rx="14" fill="#ebfbee" stroke="#2f9e44"/>
+    <text x="580" y="72" text-anchor="middle" font-weight="bold" font-size="17">Temps 2 : préparer les données</text>
+    <text x="580" y="98" text-anchor="middle">en lot, quand les données changent</text>
+    <text x="430" y="132">• télécharger les données publiques</text>
+    <text x="430" y="156">• les nettoyer, les contrôler (DuckDB)</text>
+    <text x="430" y="180">• reconnaître les entreprises</text>
+    <text x="430" y="204">• les charger dans le graphe (Neo4j)</text>
+    <text x="430" y="232" fill="#e8590c" font-weight="bold">✋ l'humain choisit la source</text>
+
+    <rect x="800" y="40" width="340" height="230" rx="14" fill="#e8eefc" stroke="#3b5bdb"/>
+    <text x="970" y="72" text-anchor="middle" font-weight="bold" font-size="17">Temps 3 : répondre</text>
+    <text x="970" y="98" text-anchor="middle">à chaque question, en quelques secondes</text>
+    <text x="820" y="132">• comprendre la question (règles)</text>
+    <text x="820" y="156">• interroger le graphe (lecture seule)</text>
+    <text x="820" y="180">• rédiger en français (IA locale)</text>
+    <text x="820" y="204">• contrôler, puis afficher avec les preuves</text>
+    <text x="820" y="232" fill="#e8590c" font-weight="bold">✋ l'humain lit les preuves</text>
+
+    <line x1="360" y1="155" x2="408" y2="155" stroke="#444" stroke-width="2" marker-end="url(#m0)"/>
+    <line x1="750" y1="155" x2="798" y2="155" stroke="#444" stroke-width="2" marker-end="url(#m0)"/>
+    <text x="580" y="310" text-anchor="middle" fill="#495057">Si l'un des maillons manque, l'assistant ne répond pas : il s'abstient et le dit.</text>
+  </svg>
+  </div>
+
+  <div class="analogie"><strong>Image simple.</strong> Un restaurant. Le temps 1, c'est concevoir la carte et la cuisine avec toute l'équipe. Le temps 2, c'est faire les courses chez des fournisseurs connus et ranger le frigo avec des étiquettes. Le temps 3, c'est le service : un client commande, la cuisine prépare uniquement avec ce qu'il y a dans le frigo, et le serveur montre l'étiquette de chaque ingrédient.</div>
+
+  <p class="legende"><span class="badge b-humain">HUMAIN</span>une décision prise par une personne
+  <span class="badge b-ia">IA</span>un modèle de langage travaille
+  <span class="badge b-code">CODE</span>du code classique, sans IA, toujours identique
+  <span class="badge b-donnee">DONNÉE</span>une donnée ou un fichier</p>
+</section>
+
+<!-- ===================================================== -->
+<section id="conception">
+  <h2>1. Concevoir : l'équipe d'agents BMAD</h2>
+  <p class="lede">Avant d'écrire une ligne de code, une « équipe » d'agents IA a produit les documents qui décrivent quoi construire et comment. À chaque document, un humain a tranché.</p>
+
+  <div class="svgbox">
+  <svg width="1160" height="430" viewBox="0 0 1160 430" font-family="Segoe UI, Arial" font-size="13">
+    <defs><marker id="m1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#444"/></marker></defs>
+    <!-- row of agents -->
+    <g>
+      <rect x="20" y="40" width="160" height="110" rx="10" fill="#f3f0ff" stroke="#7048e8"/>
+      <text x="100" y="66" text-anchor="middle" font-weight="bold">Analyste</text>
+      <text x="100" y="88" text-anchor="middle">brief + profilage</text>
+      <text x="100" y="110" text-anchor="middle" font-size="12">docs/brief.md</text>
+      <text x="100" y="128" text-anchor="middle" font-size="12">docs/profilage-initial.md</text>
+
+      <rect x="210" y="40" width="160" height="110" rx="10" fill="#f3f0ff" stroke="#7048e8"/>
+      <text x="290" y="66" text-anchor="middle" font-weight="bold">Chef de produit</text>
+      <text x="290" y="88" text-anchor="middle">initiative (= PRD)</text>
+      <text x="290" y="110" text-anchor="middle" font-size="12">exigences R1 à R7</text>
+      <text x="290" y="128" text-anchor="middle" font-size="12">contraintes C1 à C9</text>
+
+      <rect x="400" y="40" width="160" height="110" rx="10" fill="#f3f0ff" stroke="#7048e8"/>
+      <text x="480" y="66" text-anchor="middle" font-weight="bold">Architecte</text>
+      <text x="480" y="88" text-anchor="middle">règles AD-1 à AD-5</text>
+      <text x="480" y="110" text-anchor="middle" font-size="12">local, lecture seule,</text>
+      <text x="480" y="128" text-anchor="middle" font-size="12">preuves, IA bridée</text>
+
+      <rect x="590" y="40" width="160" height="110" rx="10" fill="#f3f0ff" stroke="#7048e8"/>
+      <text x="670" y="66" text-anchor="middle" font-weight="bold">Product Owner</text>
+      <text x="670" y="88" text-anchor="middle">(Sofia) 4 epics,</text>
+      <text x="670" y="110" text-anchor="middle" font-size="12">stories avec critère</text>
+      <text x="670" y="128" text-anchor="middle" font-size="12">« fait quand »</text>
+
+      <rect x="780" y="40" width="160" height="110" rx="10" fill="#e8eefc" stroke="#3b5bdb"/>
+      <text x="860" y="66" text-anchor="middle" font-weight="bold">Développeur</text>
+      <text x="860" y="88" text-anchor="middle">une story à la fois</text>
+      <text x="860" y="110" text-anchor="middle" font-size="12">code + tests</text>
+      <text x="860" y="128" text-anchor="middle" font-size="12">+ plan de la story</text>
+
+      <rect x="970" y="40" width="170" height="110" rx="10" fill="#e8eefc" stroke="#3b5bdb"/>
+      <text x="1055" y="66" text-anchor="middle" font-weight="bold">Évaluateur</text>
+      <text x="1055" y="88" text-anchor="middle">spike du modèle,</text>
+      <text x="1055" y="110" text-anchor="middle" font-size="12">baselines, rapport</text>
+      <text x="1055" y="128" text-anchor="middle" font-size="12">comparatif</text>
+
+      <line x1="180" y1="95" x2="208" y2="95" stroke="#444" stroke-width="2" marker-end="url(#m1)"/>
+      <line x1="370" y1="95" x2="398" y2="95" stroke="#444" stroke-width="2" marker-end="url(#m1)"/>
+      <line x1="560" y1="95" x2="588" y2="95" stroke="#444" stroke-width="2" marker-end="url(#m1)"/>
+      <line x1="750" y1="95" x2="778" y2="95" stroke="#444" stroke-width="2" marker-end="url(#m1)"/>
+      <line x1="940" y1="95" x2="968" y2="95" stroke="#444" stroke-width="2" marker-end="url(#m1)"/>
+    </g>
+    <!-- human gates -->
+    <g font-size="12">
+      <polygon points="100,175 120,195 100,215 80,195" fill="#ffe8cc" stroke="#e8590c"/>
+      <text x="100" y="240" text-anchor="middle">périmètre :</text><text x="100" y="256" text-anchor="middle">2025, toutes régions</text>
+      <polygon points="290,175 310,195 290,215 270,195" fill="#ffe8cc" stroke="#e8590c"/>
+      <text x="290" y="240" text-anchor="middle">pas d'IA distante,</text><text x="290" y="256" text-anchor="middle">tout reste local</text>
+      <polygon points="480,175 500,195 480,215 460,195" fill="#ffe8cc" stroke="#e8590c"/>
+      <text x="480" y="240" text-anchor="middle">Neo4j = source</text><text x="480" y="256" text-anchor="middle">de vérité</text>
+      <polygon points="670,175 690,195 670,215 650,195" fill="#ffe8cc" stroke="#e8590c"/>
+      <text x="670" y="240" text-anchor="middle">découpage</text><text x="670" y="256" text-anchor="middle">approuvé</text>
+      <polygon points="860,175 880,195 860,215 840,195" fill="#ffe8cc" stroke="#e8590c"/>
+      <text x="860" y="240" text-anchor="middle">story acceptée</text><text x="860" y="256" text-anchor="middle">(ou corrigée)</text>
+      <polygon points="1055,175 1075,195 1055,215 1035,195" fill="#ffe8cc" stroke="#e8590c"/>
+      <text x="1055" y="240" text-anchor="middle">modèle retenu,</text><text x="1055" y="256" text-anchor="middle">seuil fixé</text>
+    </g>
+    <line x1="20" y1="290" x2="1140" y2="290" stroke="#dee2e6"/>
+    <!-- outputs -->
+    <rect x="20" y="310" width="1120" height="100" rx="10" fill="#ebfbee" stroke="#2f9e44"/>
+    <text x="40" y="338" font-weight="bold">Ce qui reste écrit (la mémoire du projet) — dans _bmad-output/initiative-marchegraph-decp/</text>
+    <text x="40" y="362">initiative-marchegraph-decp.md (exigences, décisions datées) · architecture-…md (AD-1 à AD-5) · tickets/tickets.toml (ordre des epics)</text>
+    <text x="40" y="384">un dossier par epic : son fichier, ses stories dans tickets.toml, un plan par story avec son statut (planned → in-progress → built → done)</text>
+  </svg>
+  </div>
+
+  <h3>Ce que chaque document a imposé à notre question</h3>
+  <table>
+    <tr><th>Document</th><th>Décision</th><th>Effet visible sur la réponse à « voirie en Bretagne »</th></tr>
+    <tr><td>Brief et initiative<br><small>2026-10-27</small></td><td>Question de référence n° 7 : « marchés d'un thème donné, attribués dans la région ». La région est celle de l'<strong>acheteur</strong>.</td><td>« Bretagne » désigne la région de l'acheteur, pas le lieu des travaux.</td></tr>
+    <tr><td>Architecture AD-3<br><small>2026-10-27</small></td><td>Requêtes préparées, lecture seule ; l'IA ne fait que rédiger, jamais de requête ; les preuves viennent du graphe.</td><td>L'IA ne voit jamais la base. Elle reçoit un résultat déjà calculé.</td></tr>
+    <tr><td>Architecture AD-4<br><small>2026-10-27</small></td><td>Tout reste sur la machine : Neo4j, Streamlit et l'IA n'écoutent que « 127.0.0.1 ».</td><td>Aucune donnée ne quitte l'ordinateur.</td></tr>
+    <tr><td>Epic 3, décisions de modèle<br><small>2026-10-28</small></td><td>Un marché = un nœud ; si une valeur varie entre lignes, on garde <em>toutes</em> les valeurs. Un marché à plusieurs régions n'est pas rattaché à une région.</td><td>Certains marchés sont exclus du résultat et <strong>comptés à part</strong>, avec une limite affichée.</td></tr>
+    <tr><td>Epic 4, stories 4.1 à 4.4<br><small>2026-10-29</small></td><td>Reconnaissance par règles ; modèle local <code>phi4-mini:3.8b</code> ; contrôle des chiffres ; abstention si le texte échoue.</td><td>La réponse est rédigée en français, ou l'assistant s'abstient de rédiger tout en montrant le tableau et les preuves.</td></tr>
+  </table>
+
+  <details><summary>Pour les curieux : comment un agent BMAD reçoit ses consignes</summary>
+  <p>Chaque agent est une fiche (<code>.agents/skills/&lt;agent&gt;/SKILL.md</code>) qui demande à un script (<code>_bmad/scripts/render_skill.py</code>) d'assembler ses instructions : les consignes de BMAD, plus les réglages de l'équipe (<code>_bmad/custom/</code>), figés dans un instantané daté (<code>_bmad/render/…/manifest.json</code>). L'IA suit ce texte ; les comptes (quel ticket est prêt, quel statut) sont faits par un script, <code>tickets.py</code>, pas par l'IA.</p>
+  </details>
+</section>
+
+<!-- ===================================================== -->
+<section id="donnees">
+  <h2>2. Préparer les données : de data.gouv.fr au graphe</h2>
+  <p class="lede">La réponse ne peut contenir que ce qui a été chargé. Voici le chemin de la donnée publique jusqu'au graphe, avec un contrôle à chaque étape.</p>
+
+  <div class="svgbox">
+  <svg width="1160" height="420" viewBox="0 0 1160 420" font-family="Segoe UI, Arial" font-size="13">
+    <defs><marker id="m2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#444"/></marker></defs>
+    <rect x="20" y="50" width="170" height="120" rx="10" fill="#ebfbee" stroke="#2f9e44"/>
+    <text x="105" y="76" text-anchor="middle" font-weight="bold">data.gouv.fr</text>
+    <text x="105" y="98" text-anchor="middle">DECP consolidées</text>
+    <text x="105" y="120" text-anchor="middle" font-size="12">Licence Ouverte 2.0</text>
+    <text x="105" y="142" text-anchor="middle" font-size="12">decp.parquet (~255 Mo)</text>
+
+    <rect x="220" y="50" width="200" height="120" rx="10" fill="#e8eefc" stroke="#3b5bdb"/>
+    <text x="320" y="76" text-anchor="middle" font-weight="bold">Préparation (DuckDB)</text>
+    <text x="320" y="98" text-anchor="middle" font-size="12">empreinte SHA-256 du fichier</text>
+    <text x="320" y="118" text-anchor="middle" font-size="12">lignes 2024–2025 conservées</text>
+    <text x="320" y="138" text-anchor="middle" font-size="12">rapport qualité + manifeste</text>
+    <text x="320" y="158" text-anchor="middle" font-size="12">aucune ligne supprimée</text>
+
+    <rect x="450" y="50" width="200" height="120" rx="10" fill="#e8eefc" stroke="#3b5bdb"/>
+    <text x="550" y="76" text-anchor="middle" font-weight="bold">Identités titulaires</text>
+    <text x="550" y="98" text-anchor="middle" font-size="12">même type + même identifiant</text>
+    <text x="550" y="118" text-anchor="middle" font-size="12">= même entreprise</text>
+    <text x="550" y="138" text-anchor="middle" font-size="12">jamais par le nom seul</text>
+    <text x="550" y="158" text-anchor="middle" font-size="12">précision mesurée à la main</text>
+
+    <rect x="680" y="50" width="220" height="120" rx="10" fill="#e8eefc" stroke="#3b5bdb"/>
+    <text x="790" y="76" text-anchor="middle" font-weight="bold">Chargement Neo4j</text>
+    <text x="790" y="98" text-anchor="middle" font-size="12">1 nœud Marché par uid</text>
+    <text x="790" y="118" text-anchor="middle" font-size="12">valeurs multiples gardées</text>
+    <text x="790" y="138" text-anchor="middle" font-size="12">relancer = même résultat</text>
+    <text x="790" y="158" text-anchor="middle" font-size="12">comptes vérifiés après coup</text>
+
+    <rect x="930" y="50" width="210" height="120" rx="10" fill="#fff9db" stroke="#f08c00"/>
+    <text x="1035" y="76" text-anchor="middle" font-weight="bold">Graphe prêt</text>
+    <text x="1035" y="98" text-anchor="middle" font-size="12">Neo4j 5.26, 127.0.0.1</text>
+    <text x="1035" y="118" text-anchor="middle" font-size="12">~570 000 marchés</text>
+    <text x="1035" y="138" text-anchor="middle" font-size="12">+ ~350 000 versions</text>
+    <text x="1035" y="158" text-anchor="middle" font-size="12">de modification</text>
+
+    <line x1="190" y1="110" x2="218" y2="110" stroke="#444" stroke-width="2" marker-end="url(#m2)"/>
+    <line x1="420" y1="110" x2="448" y2="110" stroke="#444" stroke-width="2" marker-end="url(#m2)"/>
+    <line x1="650" y1="110" x2="678" y2="110" stroke="#444" stroke-width="2" marker-end="url(#m2)"/>
+    <line x1="900" y1="110" x2="928" y2="110" stroke="#444" stroke-width="2" marker-end="url(#m2)"/>
+
+    <!-- conditions -->
+    <polygon points="320,205 345,230 320,255 295,230" fill="#ffe8cc" stroke="#e8590c"/>
+    <text x="320" y="285" text-anchor="middle" font-size="12">empreinte = snapshot de référence ?</text>
+    <text x="230" y="310" font-size="12" fill="#2f9e44">oui → chiffres de référence vérifiés</text>
+    <text x="230" y="330" font-size="12" fill="#c92a2a">non → refus, sauf exception décidée</text>
+    <text x="230" y="350" font-size="12" fill="#c92a2a">par l'humain (démo uniquement)</text>
+    <line x1="320" y1="170" x2="320" y2="203" stroke="#444" stroke-width="1.5" marker-end="url(#m2)"/>
+
+    <polygon points="790,205 815,230 790,255 765,230" fill="#ffe8cc" stroke="#e8590c"/>
+    <text x="790" y="285" text-anchor="middle" font-size="12">un même marché a plusieurs régions ?</text>
+    <text x="690" y="310" font-size="12">on garde toutes les valeurs</text>
+    <text x="690" y="330" font-size="12">(acheteur_region_code_values)</text>
+    <text x="690" y="350" font-size="12">sans en choisir une au hasard</text>
+    <line x1="790" y1="170" x2="790" y2="203" stroke="#444" stroke-width="1.5" marker-end="url(#m2)"/>
+    <text x="580" y="400" text-anchor="middle" fill="#495057">Rien n'est « corrigé » en silence : les anomalies sont signalées, comptées et conservées.</text>
+  </svg>
+  </div>
+
+  <div class="analogie"><strong>Image simple.</strong> On fait ses courses chez un fournisseur connu (data.gouv.fr), on note le numéro de lot (l'empreinte SHA-256), on vérifie chaque produit (rapport qualité) et on range tout avec une étiquette, sans rien jeter. Si un produit a deux étiquettes contradictoires, on garde les deux et on le note.</div>
+
+  <div class="humain"><span class="badge b-humain">HUMAIN</span><strong>Décision du 29/10 :</strong> sur ce poste, le fichier a été retéléchargé, et il est différent du snapshot de référence. L'humain a accepté cette copie <em>pour la démo uniquement</em>, et non pour l'évaluation. Les chiffres affichés dans la démo diffèrent donc légèrement des chiffres de référence.</div>
+
+  <details><summary>Pour les curieux : les commandes</summary>
+<pre>src/marchegraph/data/prepare.py                 # DuckDB : préparation, empreinte, qualité
+src/marchegraph/entity_resolution/prepare.py    # identités titulaires
+python -m marchegraph.graph.load_initial_awards # marchés, acheteurs, titulaires
+python -m marchegraph.graph.load_modifications  # versions de modification</pre>
+  </details>
+</section>
+
+<!-- ===================================================== -->
+<section id="graphe">
+  <h2>3. Le graphe : ce que Neo4j contient</h2>
+  <p class="lede">Un graphe, ce sont des « choses » (nœuds) et des « liens » entre elles. Ici, quatre sortes de choses et trois sortes de liens.</p>
+
+  <div class="svgbox">
+  <svg width="1160" height="400" viewBox="0 0 1160 400" font-family="Segoe UI, Arial" font-size="13">
+    <defs><marker id="m3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3b5bdb"/></marker></defs>
+    <!-- Marche -->
+    <circle cx="560" cy="200" r="95" fill="#fff9db" stroke="#f08c00" stroke-width="3"/>
+    <text x="560" y="160" text-anchor="middle" font-weight="bold" font-size="16">Marche</text>
+    <text x="560" y="182" text-anchor="middle" font-size="12">uid (identifiant unique)</text>
+    <text x="560" y="200" text-anchor="middle" font-size="12">annee : 2025</text>
+    <text x="560" y="218" text-anchor="middle" font-size="12">objet_values : [« Travaux</text>
+    <text x="560" y="234" text-anchor="middle" font-size="12">de voirie … »]</text>
+    <text x="560" y="252" text-anchor="middle" font-size="12">acheteur_region_code_values : [« 53 »]</text>
+
+    <!-- Acheteur -->
+    <circle cx="160" cy="110" r="70" fill="#e7f5ff" stroke="#1c7ed6" stroke-width="3"/>
+    <text x="160" y="104" text-anchor="middle" font-weight="bold" font-size="16">Acheteur</text>
+    <text x="160" y="126" text-anchor="middle" font-size="12">id, noms</text>
+    <line x1="470" y1="170" x2="232" y2="122" stroke="#3b5bdb" stroke-width="2.5" marker-end="url(#m3)"/>
+    <text x="330" y="132" font-weight="bold" fill="#3b5bdb">A_ACHETEUR</text>
+
+    <!-- Titulaire -->
+    <circle cx="160" cy="310" r="70" fill="#e6fcf5" stroke="#0ca678" stroke-width="3"/>
+    <text x="160" y="300" text-anchor="middle" font-weight="bold" font-size="16">Titulaire</text>
+    <text x="160" y="322" text-anchor="middle" font-size="12">type + identifiant, noms</text>
+    <line x1="470" y1="235" x2="232" y2="298" stroke="#3b5bdb" stroke-width="2.5" marker-end="url(#m3)"/>
+    <text x="300" y="285" font-weight="bold" fill="#3b5bdb">A_TITULAIRE (0, 1 ou plusieurs)</text>
+
+    <!-- Modification -->
+    <circle cx="960" cy="200" r="80" fill="#f3f0ff" stroke="#7048e8" stroke-width="3"/>
+    <text x="960" y="192" text-anchor="middle" font-weight="bold" font-size="16">Modification</text>
+    <text x="960" y="214" text-anchor="middle" font-size="12">(uid, n° de version)</text>
+    <line x1="880" y1="200" x2="657" y2="200" stroke="#3b5bdb" stroke-width="2.5" marker-end="url(#m3)"/>
+    <text x="700" y="190" font-weight="bold" fill="#3b5bdb">MODIFICATION_DE</text>
+    <text x="900" y="310" text-anchor="middle" font-size="12">si le marché initial n'existe pas dans les données :</text>
+    <text x="900" y="328" text-anchor="middle" font-size="12">la version est gardée sans lien, et marquée</text>
+
+    <rect x="320" y="350" width="520" height="36" rx="8" fill="#ebfbee" stroke="#2f9e44"/>
+    <text x="580" y="373" text-anchor="middle">Pour « voirie en Bretagne », seul le nœud Marche est lu : son objet et sa région.</text>
+  </svg>
+  </div>
+
+  <div class="analogie"><strong>Image simple.</strong> Une fiche par marché, épinglée sur un tableau, avec des fils vers la fiche de l'acheteur et celles des entreprises. Une modification est un post-it accroché à la fiche du marché. Le graphe, c'est le tableau avec ses fils.</div>
+</section>
+
+<!-- ===================================================== -->
+<section id="verif">
+  <h2>4. Vérifier le modèle : RDF et SHACL</h2>
+  <p class="lede">Comment être sûr que le graphe respecte les règles décidées ? On le traduit dans un format standard du web des données (RDF), puis on lui applique un contrôle automatique de règles (SHACL).</p>
+
+  <div class="attention"><strong>Important :</strong> ce contrôle ne s'exécute <em>pas</em> à chaque question. Il vérifie le <strong>modèle</strong> du graphe sur un cas de démonstration et dans le test de bout en bout, avant toute mise en service. C'est un contrôle de conception, pas un contrôle de réponse.</div>
+
+  <div class="svgbox">
+  <svg width="1160" height="330" viewBox="0 0 1160 330" font-family="Segoe UI, Arial" font-size="13">
+    <defs><marker id="m4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#444"/></marker></defs>
+    <rect x="20" y="60" width="180" height="110" rx="10" fill="#fff9db" stroke="#f08c00"/>
+    <text x="110" y="88" text-anchor="middle" font-weight="bold">Neo4j</text>
+    <text x="110" y="110" text-anchor="middle" font-size="12">cas de démonstration</text>
+    <text x="110" y="130" text-anchor="middle" font-size="12">1 marché, 2 titulaires,</text>
+    <text x="110" y="150" text-anchor="middle" font-size="12">1 modification</text>
+
+    <rect x="230" y="60" width="190" height="110" rx="10" fill="#e8eefc" stroke="#3b5bdb"/>
+    <text x="325" y="88" text-anchor="middle" font-weight="bold">Export RDF</text>
+    <text x="325" y="110" text-anchor="middle" font-size="12">généré depuis Neo4j</text>
+    <text x="325" y="130" text-anchor="middle" font-size="12">(jamais modifié à la main)</text>
+    <text x="325" y="150" text-anchor="middle" font-size="12">format Turtle</text>
+
+    <rect x="450" y="40" width="250" height="150" rx="10" fill="#f3f0ff" stroke="#7048e8"/>
+    <text x="575" y="66" text-anchor="middle" font-weight="bold">Contrôle SHACL (pySHACL)</text>
+    <text x="575" y="90" text-anchor="middle" font-size="12">ontologie.ttl : le vocabulaire (OWL)</text>
+    <text x="575" y="110" text-anchor="middle" font-size="12">formes.ttl : les règles, chacune</text>
+    <text x="575" y="128" text-anchor="middle" font-size="12">avec un identifiant stable</text>
+    <text x="575" y="152" text-anchor="middle" font-size="12">ex. MG-VAL-MARCHE-ACHETEUR-001</text>
+    <text x="575" y="172" text-anchor="middle" font-size="12">MG-VAL-TITULAIRE-SIRET-006</text>
+
+    <polygon points="760,115 790,145 760,175 730,145" fill="#ffe8cc" stroke="#e8590c"/>
+    <text x="760" y="205" text-anchor="middle" font-size="12">conforme ?</text>
+
+    <rect x="840" y="40" width="300" height="80" rx="10" fill="#ebfbee" stroke="#2f9e44"/>
+    <text x="990" y="70" text-anchor="middle" font-weight="bold" fill="#2f9e44">Oui : le modèle est validé</text>
+    <text x="990" y="94" text-anchor="middle" font-size="12">l'export est enregistré localement</text>
+
+    <rect x="840" y="150" width="300" height="110" rx="10" fill="#fff5f5" stroke="#c92a2a"/>
+    <text x="990" y="178" text-anchor="middle" font-weight="bold" fill="#c92a2a">Non : rejet traçable</text>
+    <text x="990" y="200" text-anchor="middle" font-size="12">l'élément fautif reste dans les données</text>
+    <text x="990" y="220" text-anchor="middle" font-size="12">+ règle enfreinte, motif, triples</text>
+    <text x="990" y="240" text-anchor="middle" font-size="12">→ fichier JSON Lines de rejets</text>
+
+    <line x1="200" y1="115" x2="228" y2="115" stroke="#444" stroke-width="2" marker-end="url(#m4)"/>
+    <line x1="420" y1="115" x2="448" y2="115" stroke="#444" stroke-width="2" marker-end="url(#m4)"/>
+    <line x1="700" y1="130" x2="728" y2="142" stroke="#444" stroke-width="2" marker-end="url(#m4)"/>
+    <line x1="790" y1="140" x2="838" y2="85" stroke="#2f9e44" stroke-width="2" marker-end="url(#m4)"/>
+    <line x1="790" y1="150" x2="838" y2="200" stroke="#c92a2a" stroke-width="2" marker-end="url(#m4)"/>
+    <text x="580" y="300" text-anchor="middle" fill="#495057">Exemple de règle : « un marché doit avoir un acheteur ». Retirer l'acheteur d'un marché déclenche MG-VAL-MARCHE-ACHETEUR-001 (testé).</text>
+  </svg>
+  </div>
+
+  <div class="analogie"><strong>Image simple.</strong> Un contrôle technique de voiture. On n'inspecte pas chaque trajet, on vérifie une fois que le véhicule respecte les normes (freins, phares). Chaque défaut a un code officiel, et la voiture n'est pas détruite : on note le défaut et on le montre.</div>
+
+  <div class="humain"><span class="badge b-humain">HUMAIN</span><strong>Décision du 28/10 :</strong> l'utilisateur a choisi OWL pour le vocabulaire, SKOS pour les codes CPV et SHACL pour les règles, ainsi que la façon de représenter un marché à plusieurs titulaires et ses modifications. Ces choix restent les siens : c'est une règle du projet.</div>
+</section>
+
+<!-- ===================================================== -->
+<section id="question">
+  <h2>5. Le moment de la question, étape par étape</h2>
+  <p class="lede">L'utilisateur tape sa question dans l'interface locale. Voici tout ce qui se déclenche, avec chaque embranchement.</p>
+
+  <div class="svgbox">
+  <svg width="1160" height="1180" viewBox="0 0 1160 1180" font-family="Segoe UI, Arial" font-size="13">
+    <defs>
+      <marker id="m5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#444"/></marker>
+    </defs>
+    <!-- 1 user -->
+    <rect x="380" y="20" width="400" height="60" rx="30" fill="#ffe8cc" stroke="#e8590c" stroke-width="2"/>
+    <text x="580" y="46" text-anchor="middle" font-weight="bold">✋ L'utilisateur tape :</text>
+    <text x="580" y="66" text-anchor="middle">« Quels marchés concernent la voirie en Bretagne ? »</text>
+    <line x1="580" y1="80" x2="580" y2="108" stroke="#444" stroke-width="2" marker-end="url(#m5)"/>
+
+    <!-- 2 interface -->
+    <rect x="380" y="110" width="400" height="60" rx="10" fill="#e8eefc" stroke="#3b5bdb"/>
+    <text x="580" y="134" text-anchor="middle" font-weight="bold">Interface Streamlit (127.0.0.1:8501)</text>
+    <text x="580" y="154" text-anchor="middle" font-size="12">vérifie : Neo4j local ? IA locale ? sinon arrêt</text>
+    <line x1="580" y1="170" x2="580" y2="198" stroke="#444" stroke-width="2" marker-end="url(#m5)"/>
+
+    <!-- 3 interpretation -->
+    <rect x="330" y="200" width="500" height="96" rx="10" fill="#e8eefc" stroke="#3b5bdb"/>
+    <text x="580" y="224" text-anchor="middle" font-weight="bold">Comprendre la question (règles, sans IA)</text>
+    <text x="580" y="246" text-anchor="middle" font-size="12">année : aucune citée → 2025 par défaut</text>
+    <text x="580" y="266" text-anchor="middle" font-size="12">région : « Bretagne » → code INSEE 53</text>
+    <text x="580" y="286" text-anchor="middle" font-size="12">thème : mot après « concernent » → « voirie »</text>
+    <line x1="580" y1="296" x2="580" y2="324" stroke="#444" stroke-width="2" marker-end="url(#m5)"/>
+
+    <!-- D1 -->
+    <polygon points="580,326 700,386 580,446 460,386" fill="#fff4e6" stroke="#e8590c" stroke-width="2"/>
+    <text x="580" y="380" text-anchor="middle" font-weight="bold">Question reconnue</text>
+    <text x="580" y="398" text-anchor="middle">sans ambiguïté ?</text>
+    <rect x="800" y="340" width="340" height="96" rx="10" fill="#fff5f5" stroke="#c92a2a"/>
+    <text x="970" y="364" text-anchor="middle" font-weight="bold" fill="#c92a2a">NON → abstention</text>
+    <text x="970" y="384" text-anchor="middle" font-size="12">« Je ne sais pas répondre… je préfère</text>
+    <text x="970" y="402" text-anchor="middle" font-size="12">m'abstenir plutôt que d'inventer »</text>
+    <text x="970" y="422" text-anchor="middle" font-size="11">ex. deux régions, thème absent, année 2019</text>
+    <line x1="700" y1="386" x2="798" y2="386" stroke="#c92a2a" stroke-width="2" marker-end="url(#m5)"/>
+    <text x="740" y="378" fill="#c92a2a" font-size="12">non</text>
+    <line x1="580" y1="446" x2="580" y2="474" stroke="#2f9e44" stroke-width="2" marker-end="url(#m5)"/>
+    <text x="592" y="466" fill="#2f9e44" font-size="12">oui : question 7</text>
+
+    <!-- 4 query -->
+    <rect x="330" y="476" width="500" height="110" rx="10" fill="#fff9db" stroke="#f08c00"/>
+    <text x="580" y="500" text-anchor="middle" font-weight="bold">Interroger le graphe (requête préparée, lecture seule)</text>
+    <text x="580" y="522" text-anchor="middle" font-size="12">marchés de 2025 dont l'objet contient « voirie »</text>
+    <text x="580" y="542" text-anchor="middle" font-size="12">et dont la seule région d'acheteur est 53</text>
+    <text x="580" y="562" text-anchor="middle" font-size="12">+ comptes : sans région, plusieurs régions</text>
+    <text x="580" y="578" text-anchor="middle" font-size="11">(au plus 100 marchés détaillés)</text>
+    <line x1="580" y1="586" x2="580" y2="614" stroke="#444" stroke-width="2" marker-end="url(#m5)"/>
+
+    <!-- 5 structured result -->
+    <rect x="330" y="616" width="500" height="88" rx="10" fill="#ebfbee" stroke="#2f9e44"/>
+    <text x="580" y="640" text-anchor="middle" font-weight="bold">Résultat structuré</text>
+    <text x="580" y="662" text-anchor="middle" font-size="12">lignes (uid, région, objet) + PREUVES (quel nœud, quelle propriété)</text>
+    <text x="580" y="682" text-anchor="middle" font-size="12">+ LIMITES écrites (thème par sous-chaîne, marchés exclus comptés)</text>
+    <line x1="580" y1="704" x2="580" y2="732" stroke="#444" stroke-width="2" marker-end="url(#m5)"/>
+
+    <!-- D2 -->
+    <polygon points="580,734 700,789 580,844 460,789" fill="#fff4e6" stroke="#e8590c" stroke-width="2"/>
+    <text x="580" y="782" text-anchor="middle" font-weight="bold">Des lignes, et une IA</text>
+    <text x="580" y="800" text-anchor="middle">locale configurée ?</text>
+    <rect x="20" y="752" width="300" height="76" rx="10" fill="#e8eefc" stroke="#3b5bdb"/>
+    <text x="170" y="778" text-anchor="middle" font-weight="bold">NON → phrase type (gabarit)</text>
+    <text x="170" y="798" text-anchor="middle" font-size="12">« Marchés d'un thème dans une région :</text>
+    <text x="170" y="816" text-anchor="middle" font-size="12">N ligne(s), détaillées ci-dessous »</text>
+    <line x1="460" y1="789" x2="322" y2="789" stroke="#444" stroke-width="2" marker-end="url(#m5)"/>
+    <text x="380" y="780" font-size="12">non</text>
+    <line x1="580" y1="844" x2="580" y2="872" stroke="#2f9e44" stroke-width="2" marker-end="url(#m5)"/>
+    <text x="592" y="864" fill="#2f9e44" font-size="12">oui</text>
+
+    <!-- 6 IA -->
+    <rect x="330" y="874" width="500" height="100" rx="10" fill="#f3f0ff" stroke="#7048e8"/>
+    <text x="580" y="898" text-anchor="middle" font-weight="bold">Rédiger en français : IA locale phi4-mini (127.0.0.1)</text>
+    <text x="580" y="920" text-anchor="middle" font-size="12">elle reçoit SEULEMENT : la question, 10 lignes au plus, les limites</text>
+    <text x="580" y="940" text-anchor="middle" font-size="12">elle ne reçoit JAMAIS : la base, les preuves, une requête</text>
+    <text x="580" y="960" text-anchor="middle" font-size="12">consigne : « n'ajoute aucun fait, recopie les nombres »</text>
+    <line x1="580" y1="974" x2="580" y2="1002" stroke="#444" stroke-width="2" marker-end="url(#m5)"/>
+
+    <!-- D3 -->
+    <polygon points="580,1004 720,1064 580,1124 440,1064" fill="#fff4e6" stroke="#e8590c" stroke-width="2"/>
+    <text x="580" y="1052" text-anchor="middle" font-weight="bold">Le texte passe</text>
+    <text x="580" y="1070" text-anchor="middle">le contrôle ?</text>
+    <text x="580" y="1088" text-anchor="middle" font-size="11">(code, sans IA)</text>
+    <rect x="800" y="990" width="340" height="150" rx="10" fill="#fff5f5" stroke="#c92a2a"/>
+    <text x="970" y="1014" text-anchor="middle" font-weight="bold" fill="#c92a2a">NON → abstention de rédaction</text>
+    <text x="820" y="1036" font-size="12">rejeté si : un chiffre absent du résultat,</text>
+    <text x="820" y="1054" font-size="12">un nombre en lettres faux (« trois »),</text>
+    <text x="820" y="1072" font-size="12">« aucun résultat » alors qu'il y en a,</text>
+    <text x="820" y="1090" font-size="12">du JSON, un texte vide, IA indisponible</text>
+    <text x="820" y="1116" font-size="12" font-weight="bold">le tableau et les preuves restent affichés</text>
+    <line x1="720" y1="1064" x2="798" y2="1064" stroke="#c92a2a" stroke-width="2" marker-end="url(#m5)"/>
+    <text x="740" y="1056" fill="#c92a2a" font-size="12">non</text>
+    <rect x="20" y="1030" width="300" height="70" rx="10" fill="#ebfbee" stroke="#2f9e44"/>
+    <text x="170" y="1058" text-anchor="middle" font-weight="bold" fill="#2f9e44">OUI → texte affiché</text>
+    <text x="170" y="1080" text-anchor="middle" font-size="12">puis tableau, limites, preuves</text>
+    <line x1="440" y1="1064" x2="322" y2="1064" stroke="#2f9e44" stroke-width="2" marker-end="url(#m5)"/>
+    <text x="380" y="1056" fill="#2f9e44" font-size="12">oui</text>
+    <text x="580" y="1165" text-anchor="middle" fill="#495057">Trois portes de sortie possibles, toutes honnêtes : réponse rédigée, phrase type, ou abstention motivée.</text>
+  </svg>
+  </div>
+
+  <div class="steps">
+    <div class="step"><span class="badge b-humain">HUMAIN</span><strong>La question.</strong> Elle est tapée en français dans l'interface ouverte sur l'ordinateur, à l'adresse <code>127.0.0.1:8501</code> : « 127.0.0.1 » veut dire « cette machine-ci ».</div>
+    <div class="step"><span class="badge b-code">CODE</span><strong>Comprendre, sans IA.</strong> Des règles écrites repèrent le type de question (n° 7), le thème (« voirie »), la région (« Bretagne », soit le code 53) et l'année (2025 par défaut). La moindre ambiguïté, comme deux régions ou un thème manquant, entraîne une abstention.
+      <div class="analogie">Comme un guichet qui ne traite que des formulaires connus. Si la demande ne rentre dans aucune case, l'agent ne bricole pas : il le dit.</div>
+    </div>
+    <div class="step"><span class="badge b-code">CODE</span><span class="badge b-donnee">DONNÉE</span><strong>Interroger le graphe.</strong> Une requête écrite à l'avance, avec des « trous » où l'on insère « voirie », « 53 » et « 2025 », lit Neo4j en lecture seule. Elle ne peut rien modifier.
+      <details><summary>Pour les curieux : la requête Cypher réelle</summary>
+<pre>MATCH (market:Marche {source_id: $source_id})
+WHERE market.annee = $year
+  AND any(text_value IN coalesce(market.objet_values, [])
+          WHERE toLower(text_value) CONTAINS toLower($theme))
+WITH market, [ … objets qui contiennent le thème … ] AS matching_objects,
+     coalesce(market.acheteur_region_code_values, []) AS regions
+WHERE size(regions) = 1 AND regions[0] = $region
+RETURN market.uid AS uid, regions[0] AS region_code, matching_objects
+ORDER BY market.uid ASC
+LIMIT $limit</pre>
+      <p>Les valeurs <code>$theme</code>, <code>$region</code> et <code>$year</code> sont passées comme paramètres, jamais collées dans le texte : impossible d'injecter une commande. Fichier : <code>src/marchegraph/graph/queries.py</code>.</p>
+      </details>
+    </div>
+    <div class="step"><span class="badge b-donnee">DONNÉE</span><strong>Le résultat, avec ses preuves et ses limites.</strong> Chaque ligne porte ses preuves : « nœud Marché <code>uid</code>, propriété <code>objet_values</code> = "Travaux de voirie…" » et « propriété <code>acheteur_region_code_values</code> = 53 ». Les limites sont écrites noir sur blanc. Par exemple, les marchés sans région ou à plusieurs régions sont exclus, mais comptés à part.</div>
+    <div class="step"><span class="badge b-ia">IA</span><strong>Rédiger, sous contrôle.</strong> Le modèle <code>phi4-mini</code> tourne sur la machine. Il ne voit qu'un extrait du résultat (10 lignes au plus) et ses limites, et il écrit trois phrases au maximum. Il ne voit ni la base ni les preuves.</div>
+    <div class="step"><span class="badge b-code">CODE</span><strong>Contrôler le texte.</strong> Un programme compare le texte au résultat. Un nombre inventé, un nombre écrit en lettres incorrect, un « aucun résultat » mensonger ou du code au lieu d'une phrase suffisent pour rejeter le texte. L'assistant s'abstient alors de rédiger, mais montre quand même le tableau et les preuves.
+      <div class="garde"><strong>Exemple réel (essai du 29/10) :</strong> le modèle a écrit « travaille avec trois acheteurs » alors que le résultat en comptait deux. Le contrôle l'a détecté, et rien n'a été affiché à tort.</div>
+    </div>
+    <div class="step"><span class="badge b-humain">HUMAIN</span><strong>Lire et vérifier.</strong> L'utilisateur lit la phrase, le tableau, les limites, et peut ouvrir « Preuves issues du graphe » pour voir exactement d'où vient chaque ligne.</div>
+  </div>
+</section>
+
+<!-- ===================================================== -->
+<section id="reponse">
+  <h2>6. Ce que l'utilisateur voit</h2>
+  <div class="svgbox">
+  <svg width="1160" height="400" viewBox="0 0 1160 400" font-family="Segoe UI, Arial" font-size="13">
+    <rect x="20" y="20" width="1120" height="360" rx="14" fill="#ffffff" stroke="#adb5bd"/>
+    <rect x="20" y="20" width="1120" height="40" rx="14" fill="#f1f3f5"/>
+    <text x="40" y="46" font-weight="bold">MarchéGraph : démo locale — Requêtes préparées en lecture seule ; formulation par le modèle local phi4-mini:3.8b, contrôlée.</text>
+    <text x="40" y="90" fill="#868e96" font-size="12">Question reconnue : Marchés d'un thème dans une région.</text>
+    <rect x="40" y="100" width="1080" height="56" rx="8" fill="#f8f9fa"/>
+    <text x="56" y="124">« Les marchés concernant la voirie en Bretagne sont le Lot 5 District de Vannes, le Lot 2 District de Brest,</text>
+    <text x="56" y="144">le Lot 1 District de St Brieuc… » (texte rédigé par l'IA, contrôlé)</text>
+    <text x="40" y="180">100 ligne(s) de résultat.</text>
+    <rect x="40" y="190" width="1080" height="28" rx="6" fill="#fff9db" stroke="#f08c00"/>
+    <text x="56" y="209" font-size="12">⚠ Le thème est recherché comme sous-chaîne insensible à la casse dans les valeurs distinctes de l'objet.</text>
+    <rect x="40" y="224" width="1080" height="28" rx="6" fill="#fff9db" stroke="#f08c00"/>
+    <text x="56" y="243" font-size="12">⚠ Les marchés sans région ou ayant plusieurs régions sont exclus du résultat par région et comptés séparément.</text>
+    <rect x="40" y="258" width="1080" height="28" rx="6" fill="#fff9db" stroke="#f08c00"/>
+    <text x="56" y="277" font-size="12">⚠ Seuls les 100 premiers marchés correspondants sont détaillés. (affiché seulement s'il y en a plus de 100)</text>
+    <rect x="40" y="296" width="520" height="70" rx="6" fill="#f1f3f5"/>
+    <text x="56" y="318" font-size="12" font-weight="bold">Tableau : uid · region_code · matching_objects</text>
+    <text x="56" y="340" font-size="12">… · 53 · « Lot 5 District de Vannes … voirie … »</text>
+    <rect x="580" y="296" width="540" height="70" rx="6" fill="#ebfbee" stroke="#2f9e44"/>
+    <text x="596" y="318" font-size="12" font-weight="bold">▸ Preuves issues du graphe</text>
+    <text x="596" y="340" font-size="12">Marche · uid · objet_values · « … voirie … »</text>
+    <text x="596" y="358" font-size="12">Marche · uid · acheteur_region_code_values · 53</text>
+  </svg>
+  </div>
+  <p>Le texte cité provient de l'essai réel sur le graphe local du 29/10. Ce graphe a été construit à partir du snapshot retéléchargé, pour la démo uniquement.</p>
+  <div class="garde"><strong>Pourquoi c'est digne de confiance.</strong> Chaque chiffre affiché vient du graphe. Chaque ligne a sa preuve, et chaque limite est dite. Quand l'IA se trompe, le contrôle l'arrête, et quand la question sort du périmètre, l'assistant s'abstient.</div>
+</section>
+
+<!-- ===================================================== -->
+<section id="humains">
+  <h2>7. Toutes les décisions humaines sur ce parcours</h2>
+  <table>
+    <tr><th>Quand</th><th>Décision</th><th>Où elle est écrite</th></tr>
+    <tr><td>27/10</td><td>Périmètre 2025 toutes régions, 2024 en comparaison ; région = celle de l'acheteur.</td><td>Initiative, Notes</td></tr>
+    <tr><td>27/10</td><td>Aucune IA distante ; un modèle local seulement après un test de capacité.</td><td>Initiative C9, architecture AD-3 et AD-4</td></tr>
+    <tr><td>27/10</td><td>Neo4j = seule source de vérité ; RDF = export généré.</td><td>Architecture AD-2</td></tr>
+    <tr><td>28/10</td><td>Un marché par uid, plusieurs titulaires possibles ; modifications en versions ; valeurs multiples conservées.</td><td>Epic 3, Notes</td></tr>
+    <tr><td>28/10</td><td>OWL, SKOS et SHACL pour le modèle et sa validation.</td><td>Epic 3, Notes</td></tr>
+    <tr><td>29/10</td><td>Snapshot retéléchargé accepté pour la démo seulement.</td><td><code>docs/setup-demo-agent.md</code></td></tr>
+    <tr><td>29/10</td><td>Découpage de l'epic 4 approuvé ; compréhension par règles.</td><td>Epic 4, Notes</td></tr>
+    <tr><td>29/10</td><td>Modèle retenu : <code>phi4-mini:3.8b</code> (durée et mémoire).</td><td><code>docs/spike-modele-local-resultats.md</code></td></tr>
+    <tr><td>29/10</td><td>En cas d'échec du contrôle : abstention de rédaction.</td><td>Epic 4, Notes</td></tr>
+    <tr><td>29/10</td><td>Seuil de réussite fixé après la baseline ; lecture stricte des hallucinations.</td><td><code>docs/evaluation-baselines.md</code>, <code>docs/evaluation-assistant.md</code></td></tr>
+  </table>
+  <div class="humain"><span class="badge b-humain">HUMAIN</span>Aucune de ces décisions n'a été prise par l'IA. L'IA a proposé, mesuré et rédigé, et l'humain a tranché. Chaque décision est datée, pour ne pas avoir à la reposer.</div>
+</section>
+
+<!-- ===================================================== -->
+<section id="glossaire">
+  <h2>Glossaire sans jargon</h2>
+  <table>
+    <tr><th>Mot</th><th>En clair</th></tr>
+    <tr><td>DECP</td><td>Données essentielles de la commande publique : la liste officielle des marchés publics attribués, publiée en données ouvertes.</td></tr>
+    <tr><td>Marché, uid</td><td>Un contrat public ; l'uid est son numéro unique.</td></tr>
+    <tr><td>Acheteur, titulaire</td><td>Celui qui achète (mairie, hôpital…) et l'entreprise qui remporte le marché.</td></tr>
+    <tr><td>Graphe, nœud, lien</td><td>Une base qui range des fiches (nœuds) reliées par des fils (liens).</td></tr>
+    <tr><td>Neo4j</td><td>Le logiciel de base de données en graphe utilisé ici.</td></tr>
+    <tr><td>Requête préparée</td><td>Une question à la base écrite à l'avance, avec des cases à remplir. Impossible d'y glisser autre chose.</td></tr>
+    <tr><td>Preuve</td><td>L'indication précise de la fiche et du champ d'où vient une valeur.</td></tr>
+    <tr><td>RDF</td><td>Un format standard pour décrire des données reliées, lisible par d'autres outils.</td></tr>
+    <tr><td>OWL, SKOS</td><td>Des standards pour définir le vocabulaire (ce qu'est un marché) et les listes de codes (CPV).</td></tr>
+    <tr><td>SHACL</td><td>Un standard de règles de contrôle : chaque règle a un code, et chaque infraction est rapportée.</td></tr>
+    <tr><td>Modèle local</td><td>Une IA qui tourne sur l'ordinateur, sans internet.</td></tr>
+    <tr><td>Abstention</td><td>L'assistant dit qu'il ne peut pas répondre, au lieu d'inventer.</td></tr>
+    <tr><td>Baseline</td><td>La mesure de comparaison : ce que font des méthodes plus simples, mesuré avant de fixer un objectif.</td></tr>
+    <tr><td>Agent BMAD</td><td>Une IA avec un rôle (analyste, architecte, Product Owner…) qui écrit des documents et attend la validation humaine.</td></tr>
+  </table>
+</section>
+
+</main>
+<footer>MarchéGraph — parcours de la question 7, établi d'après le code et les tickets du dépôt (branche feature/refine-fondation-decp), 30/10/2026.</footer>
+</body>
+</html>

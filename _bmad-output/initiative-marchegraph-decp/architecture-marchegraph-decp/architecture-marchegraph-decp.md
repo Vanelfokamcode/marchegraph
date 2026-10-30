@@ -72,6 +72,13 @@ flowchart LR
   prose only from structured results, and may not generate or execute Cypher;
   evidence references come from the query result, not the model. Otherwise
   return deterministic answers or abstain. Never call a remote LLM service.
+- **Amendment (2026-10-30, epic 5):** the local model may also map a
+  free-form question to a closed, schema-constrained structure (measure,
+  grouping, filters, entity mentions) when deterministic rules fail. The
+  application validates that structure against its catalogue and resolves
+  entity mentions to exact graph identifiers; full-text or vector search
+  returns candidate identifiers only, never an answer. The model still never
+  writes or executes Cypher, and any invalid structure leads to abstention.
 
 ```mermaid
 flowchart LR

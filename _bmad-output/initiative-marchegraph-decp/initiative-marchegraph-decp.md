@@ -194,3 +194,8 @@ GraphRAG qui cite son chemin dans le graphe ou indique qu'il ne sait pas.
 - Open question: Si le spike ne trouve pas de modèle local suffisant pour R4 et
   R6, revoir le critère avec l'utilisateur au lieu de basculer vers un service
   distant ou d'écarter silencieusement ces exigences.
+- Decision: 2026-10-29 — L'utilisateur élargit les questions prises en charge
+  au-delà des dix questions de référence (epic 5, proposé) : questions
+  composées sur les dimensions des données, réponses toujours issues de
+  requêtes Neo4j préparées avec preuves ; la recherche textuelle ou
+  sémantique ne fournit que des candidats.

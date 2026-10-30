@@ -31,3 +31,11 @@ title = "Assistant GraphRAG local évalué"
 description = "Un assistant local répond en français avec un chemin de preuve dans le graphe ou s'abstient, et son évaluation compare ses résultats à une baseline sans graphe en rapportant hallucinations et coûts."
 covers = ["R4", "R6"]
 after = [{ epic = 3, needs = "le graphe interrogeable, ses réponses de référence et son contrat de preuve" }]
+
+[[epic]]
+id = 5
+slug = "epic-couverture-questions-factuelle"
+title = "Couverture élargie des questions, factuelle et traçable"
+description = "Les questions sont composées à partir des dimensions réelles des données et des entités citées par leur nom ; chaque réponse provient d'une requête Neo4j préparée avec preuves, la recherche textuelle ou sémantique ne fournissant que des candidats."
+covers = ["R4", "R6"]
+after = [{ epic = 4, needs = "la reconnaissance, la formulation contrôlée, l'interface et le harnais d'évaluation" }]

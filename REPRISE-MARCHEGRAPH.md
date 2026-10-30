@@ -10,11 +10,14 @@ restent les sources de vérité détaillées.
 - Dépôt : `Vanelfokamcode/marchegraph`.
 - Branche de travail : `feature/refine-fondation-decp`.
 - Initiative BMAD : [`_bmad-output/initiative-marchegraph-decp/`](./_bmad-output/initiative-marchegraph-decp/).
-- État BMAD au dernier contrôle : epics 1 et 2 terminées ; epic 3 en cours,
-  stories 3.1–3.8 terminées et 3.9 en revue ; epic 4 pas encore raffinée.
-- Prochaine action : présenter à l'utilisateur la version corrigée de la
-  story 3.9 et attendre son acceptation. Ensuite seulement, clore formellement
-  l'epic 3, raffiner et découper l'epic 4 avec BMAD.
+- État BMAD au dernier contrôle : epics 1 à 3 terminées ; epic 4 raffinée
+  en sept stories (approuvées le 2026-10-29) ; stories 4.1 (`phi4-mini:3.8b`
+  retenu), 4.2 (reconnaissance déterministe), 4.3 (formulation contrôlée,
+  abstention si le contrôle échoue), 4.4 (assistant dans la démo) et 4.5
+  (baselines, seuil fixé) terminées.
+- Prochaine action : story 4.6, `python -m marchegraph.evaluation.run
+  --assistant`, puis rapport comparatif face au seuil de
+  `docs/evaluation-baselines.md`.
 - Ne pas marquer une story acceptée ni un epic terminé sans confirmation
   explicite de l'utilisateur.
 - Les données DECP, les résultats dérivés, les exports et les labels de revue
@@ -291,8 +294,8 @@ story `review`.
 |---|---|---|
 | 1 — Fondation DECP reproductible | `done` | Stories 1.1 et 1.2 `done`. |
 | 2 — Résolution des identités titulaires | `done` | Stories 2.1 et 2.2 `done`. |
-| 3 — Graphe de connaissance vérifiable | `in-progress` | Stories 3.1–3.8 `done` ; 3.9 `review`. |
-| 4 — Assistant GraphRAG local évalué | non raffiné | Dépend de l'epic 3 ; stories pas encore découpées. |
+| 3 — Graphe de connaissance vérifiable | `done` | Stories 3.1–3.9 `done`. |
+| 4 — Assistant GraphRAG local évalué | `in-progress` | Raffinée : stories 4.1–4.7 `done` (seuil non atteint en 4.6 sur le critère hallucinations). |
 
 Étapes restantes :
 
