@@ -131,5 +131,14 @@ class DataQualityIssue:
     affected_record_count: int
 
 
+@dataclass(frozen=True)
+class CatalogueRow:
+    group: str
+    labels: tuple[str, ...]
+    value: Decimal | None
+    market_count: int
+    measured_market_count: int
+
+
 class GraphQueryDataError(ValueError):
     pass

@@ -8,9 +8,9 @@ covers: ["R4", "R6"]
 sources: ["_bmad-output/initiative-marchegraph-decp/initiative-marchegraph-decp.md", "docs/evaluation-assistant.md"]
 companions: ["_bmad-output/initiative-marchegraph-decp/architecture-marchegraph-decp/architecture-marchegraph-decp.md"]
 after: ["epic-assistant-graphrag-local-evalue"]
-refined: false
+refined: true
 risk: high
-status: proposed
+status: in-progress
 ---
 
 # Couverture élargie des questions, factuelle et traçable
@@ -84,9 +84,22 @@ l'assistant demande à l'utilisateur de choisir ou s'abstient.
   factuelle et traçable ; la recherche sémantique et BM25 sont jugées
   risquées si elles produisent la réponse.
 - Open question: Approuver le découpage en stories (`tickets/tickets.toml`).
+  Résolu le 2026-10-30 : découpage approuvé tel quel.
+- Decision: 2026-10-30 — Story 5 engagée : la décision 2 de l'epic 4 est
+  modifiée (compréhension hybride, règles d'abord) et AD-3 est complétée
+  (amendement du 2026-10-30).
+- Decision: 2026-10-30 — Story 6 engagée avec le modèle d'embedding local
+  `nomic-embed-text` via Ollama ; téléchargement à confirmer au démarrage de
+  la story.
+- Decision: 2026-10-30 — Libellés CPV : nomenclature officielle de l'UE
+  (règlement (CE) n° 213/2008), chargée localement.
 - Open question: Story 5 (compréhension par le modèle en structure fermée)
-  exige de modifier la décision 2 de l'epic 4 et de compléter AD-3.
+  exige de modifier la décision 2 de l'epic 4 et de compléter AD-3. Résolu le
+  2026-10-30.
 - Open question: Story 6 (recherche sémantique) : engager ou non, choix du
-  modèle d'embedding local, coût de calcul sur processeur.
+  modèle d'embedding local, coût de calcul sur processeur. Résolu le
+  2026-10-30.
 - Open question: Source des libellés CPV (nomenclature officielle) pour la
-  recherche par libellé.
+  recherche par libellé. Résolu le 2026-10-30.
+- Open question: Nombre et contenu exact du catalogue (story 1) : à approuver
+  par l'utilisateur avant implémentation.

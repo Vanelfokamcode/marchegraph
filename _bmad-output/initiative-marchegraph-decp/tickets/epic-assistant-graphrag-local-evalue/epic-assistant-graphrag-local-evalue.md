@@ -10,7 +10,7 @@ companions: []
 after: ["epic-graphe-connaissance-verifiable"]
 refined: true
 risk: high
-status: in-progress
+status: done
 ---
 
 # Assistant GraphRAG local évalué
