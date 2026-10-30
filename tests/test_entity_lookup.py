@@ -17,6 +17,9 @@ from marchegraph.queries.entity_lookup import (
     Resolution,
     decide,
     lucene_query,
+    option_label,
+    organisation,
+    shared_sirens,
     tokens,
 )
 from marchegraph.queries.interpretation import interpret
@@ -57,6 +60,29 @@ class LookupTests(unittest.TestCase):
                                        for i in range(8)])
         self.assertEqual(ambiguous.status, "choose")
         self.assertEqual(len(ambiguous.options), 5)
+
+    def test_options_are_shown_by_market_count(self) -> None:
+        result = decide("Ville de Paris", [
+            candidate("21750001630040", "VILLE DE PARIS (MAIRIE PARIS CENTRE)", 9.0, 5),
+            candidate("21750001600019", "VILLE DE PARIS (MAIRIE)", 8.0, 4963),
+            candidate("21750001606669", "VILLE DE PARIS (MAIRIE 5EME ARR.)", 7.0, 1),
+        ])
+        self.assertEqual([o.market_count for o in result.options], [4963, 5, 1])
+
+    def test_establishments_of_one_organisation_are_grouped(self) -> None:
+        options = (candidate("21750001630040", "VILLE DE PARIS (CENTRE)", 9.0, 5),
+                   candidate("21750001600019", "VILLE DE PARIS (MAIRIE)", 8.0, 4963),
+                   candidate("20000069300024", "REGIE VILLE PARIS", 7.0, 1),
+                   candidate("buyer-x", "AUTRE", 6.0, 1))
+        self.assertEqual(shared_sirens(options), ["217500016"])
+        group = organisation("217500016", options[:2], 5000, 12)
+        self.assertEqual((group.identifier, group.names, group.score, group.establishments),
+                         ("217500016", ("VILLE DE PARIS (MAIRIE)",), 9.0, 12))
+        self.assertEqual(option_label(group),
+                         "VILLE DE PARIS (MAIRIE) : tout l'organisme, 12 établissements "
+                         "(SIREN 217500016, 5000 marchés)")
+        self.assertEqual(option_label(options[2]),
+                         "REGIE VILLE PARIS (20000069300024, 1 marché)")
 
 
 class BuyerNameRecognitionTests(unittest.TestCase):
@@ -132,6 +158,7 @@ class FullTextFixtureTests(unittest.TestCase):
             resolve,
             search,
             search_indexes_online,
+            with_organisations,
         )
         from marchegraph.graph.neo4j_config import validate_local_neo4j_uri
 
@@ -146,7 +173,11 @@ class FullTextFixtureTests(unittest.TestCase):
             exact = resolve(session, "acheteur", "Acheteur 2024")
             self.assertEqual((exact.status, exact.chosen.identifier),
                              ("resolved", dataset.BUYER_2024))
-            self.assertGreaterEqual(len(search(session, "acheteur", "acheteur")), 3)
+            candidates = search(session, "acheteur", "acheteur")
+            self.assertGreaterEqual(len(candidates), 3)
+            grouped = with_organisations(session, candidates)
+            self.assertEqual(grouped[0].identifier, dataset.BUYER_A[:9])
+            self.assertGreaterEqual(grouped[0].establishments, 3)
             exact_name = resolve(session, "acheteur", "Acheteur A")
             self.assertEqual((exact_name.status, exact_name.chosen.identifier),
                              ("resolved", dataset.BUYER_A))

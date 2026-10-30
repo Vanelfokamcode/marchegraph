@@ -94,6 +94,46 @@ class GraphQueryTests(unittest.TestCase):
         )
         self.assertEqual(len(response.rows[0].evidence), 4)
 
+    def test_holders_of_a_whole_organisation_by_siren(self):
+        session = FakeSession(
+            {
+                queries.HOLDER_RANKING_BY_SIREN_QUERY: [
+                    {
+                        "identifier_type": "SIRET",
+                        "identifier_value": "00000000000001",
+                        "names": ["Entreprise A"],
+                        "market_count": 2,
+                        "market_buyers": [["uid-2", "21750001600019"],
+                                          ["uid-1", "21750001630040"]],
+                    }
+                ],
+                queries.BUYER_ESTABLISHMENTS_QUERY: [{"establishment_count": 12}],
+            }
+        )
+
+        response = queries.rank_holders_for_buyer(session, "217500016")
+
+        self.assertEqual(session.calls[0][1]["siren"], "217500016")
+        self.assertIn(
+            queries.EvidenceReference("Marche", "uid-1", "A_ACHETEUR", "21750001630040"),
+            response.rows[0].evidence,
+        )
+        self.assertEqual(len(response.rows[0].evidence), 4)
+        self.assertIn("12 établissement(s)", response.limitations[1])
+
+    def test_single_establishment_warns_about_its_siblings(self):
+        session = FakeSession(
+            {
+                queries.HOLDER_RANKING_QUERY: [],
+                queries.BUYER_ESTABLISHMENTS_QUERY: [{"establishment_count": 12}],
+            }
+        )
+
+        response = queries.rank_holders_for_buyer(session, "21750001600019")
+
+        self.assertIn("11 autre(s) établissement(s)", response.limitations[1])
+        self.assertIn("SIREN 217500016", response.limitations[1])
+
     def test_nature_and_procedure_summaries_keep_evidence_and_limits_separate(self):
         session = FakeSession(
             {

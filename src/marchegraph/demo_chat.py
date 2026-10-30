@@ -37,6 +37,7 @@ def main() -> None:
     from marchegraph.queries.assistant import EntityChoice
     from marchegraph.queries.assistant import answer as ask
     from marchegraph.queries.assistant import model_from_env
+    from marchegraph.queries.entity_lookup import option_label
     from marchegraph.queries.local_model import LocalModelURLError
 
     st.set_page_config(page_title="MarchéGraph (démo)")
@@ -131,8 +132,7 @@ def main() -> None:
                 st.caption("Les candidats viennent d'une recherche plein texte sur "
                            "les noms ; le score de pertinence n'est pas un fait.")
                 for option in result.options:
-                    label = (f"{', '.join(option.names[:2]) or option.identifier} "
-                             f"({option.identifier}, {option.market_count} marchés)")
+                    label = option_label(option)
                     st.button(label, key=f"choice-{option.identifier}",
                               on_click=st.session_state.__setitem__,
                               args=("choice", (question, option.identifier, label)))
