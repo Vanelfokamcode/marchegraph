@@ -12,8 +12,8 @@ risk = "high"
 [[entry]]
 id = 2
 type = "story"
-title = "Résoudre les entités citées par leur nom avec choix explicite"
-description = "Ajoute des index plein texte Neo4j (BM25) sur les noms d'acheteurs et de titulaires, les libellés CPV et les lieux ; une mention de la question produit des candidats avec identifiant exact et score ; un candidat unique au-dessus du seuil est retenu, sinon l'utilisateur choisit dans une liste ou l'assistant s'abstient. Le score n'est jamais présenté comme un fait ; la requête utilise l'identifiant choisi."
+title = "Résoudre les acheteurs et titulaires cités par leur nom avec choix explicite"
+description = "Ajoute des index plein texte Neo4j (BM25, sans accents) sur les noms d'acheteurs et de titulaires ; une mention de la question produit des candidats avec identifiant exact et score ; un nom identique ou un candidat nettement en tête est retenu, sinon l'utilisateur choisit dans une liste ou l'assistant s'abstient. Le score n'est jamais présenté comme un fait ; la requête utilise l'identifiant choisi. Premier usage : la question 2 accepte un acheteur cité par son nom."
 verify = "Sur fixtures, un nom exact, une variante proche, un nom ambigu et un nom inexistant donnent respectivement : résolution, résolution, demande de choix, abstention ; la requête exécutée reçoit l'identifiant exact et ses preuves."
 covers = ["R4"]
 after = [1]
@@ -74,3 +74,14 @@ covers = ["R4", "R6"]
 after = [1, 2, 3, 4]
 hitl = false
 risk = "medium"
+
+[[entry]]
+id = 8
+type = "story"
+title = "Reconnaître les catégories d'achat par leur libellé CPV"
+description = "Reportée par décision de l'utilisateur (2026-10-30). Charge localement la nomenclature CPV officielle de l'UE (libellés français), affiche les libellés à côté des codes et résout une catégorie citée par son nom vers un code ou une famille, avec choix explicite."
+verify = "Les résultats par famille CPV affichent leur libellé ; « nettoyage » propose les familles CPV correspondantes ou s'abstient ; la limite « catégorie déclarée par l'acheteur » est affichée."
+covers = ["R4"]
+after = [2]
+hitl = true
+risk = "low"

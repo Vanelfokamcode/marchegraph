@@ -34,6 +34,7 @@ def main() -> None:
         LocalNeo4jURLError,
         validate_local_neo4j_uri,
     )
+    from marchegraph.queries.assistant import EntityChoice
     from marchegraph.queries.assistant import answer as ask
     from marchegraph.queries.assistant import model_from_env
     from marchegraph.queries.local_model import LocalModelURLError
@@ -100,15 +101,18 @@ def main() -> None:
         with st.chat_message(role):
             st.write(text)
 
-    question = st.chat_input("Posez une question en français")
+    pending = st.session_state.pop("choice", None)
+    typed = st.chat_input("Posez une question en français")
+    question = pending[0] if pending else typed
     if not question:
         return
     with st.chat_message("user"):
-        st.write(question)
+        st.write(question if not pending else f"{question} (choix : {pending[2]})")
     with st.chat_message("assistant"):
         try:
             with read_session() as s:
-                result = ask(question, s, generate)
+                result = ask(question, s, generate,
+                             buyer_id=pending[1] if pending else None)
         except Exception as exc:
             answer = f"Erreur pendant la requête : {exc}"
             st.error(answer)
@@ -116,6 +120,22 @@ def main() -> None:
             if result is None:
                 answer = f"{ABSTENTION_TEXT} Voir la liste à gauche."
                 st.write(answer)
+            elif isinstance(result, EntityChoice) and not result.options:
+                answer = (f"Je ne trouve aucun acheteur correspondant à « "
+                          f"{result.mention} » : je m'abstiens.")
+                st.write(answer)
+            elif isinstance(result, EntityChoice):
+                answer = (f"Plusieurs acheteurs correspondent à « {result.mention} ». "
+                          "Lequel voulez-vous dire ?")
+                st.write(answer)
+                st.caption("Les candidats viennent d'une recherche plein texte sur "
+                           "les noms ; le score de pertinence n'est pas un fait.")
+                for option in result.options:
+                    label = (f"{', '.join(option.names[:2]) or option.identifier} "
+                             f"({option.identifier}, {option.market_count} marchés)")
+                    st.button(label, key=f"choice-{option.identifier}",
+                              on_click=st.session_state.__setitem__,
+                              args=("choice", (question, option.identifier, label)))
             else:
                 st.caption(f"Question reconnue : {result.interpretation.label}.")
                 formulation = result.formulation

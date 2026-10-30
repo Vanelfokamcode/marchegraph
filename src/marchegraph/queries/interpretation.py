@@ -67,6 +67,13 @@ _THEME_TAIL = re.compile(
     r"(?:\s+(?:la|le|l'))?(?:\s+region)?\s*$"
 )
 _THEME_HEAD = re.compile(r"\s*(?:(?:de la|du|des|de|le|la|les)\s+|[dl]')*")
+_HOLDER_WORDS = ("titulaire", "fournisseur", "prestataire", "entreprise", "societe")
+_BUYER_MENTION = re.compile(
+    r"\bchez\s+(?:l'acheteur\s+|l'organisme\s+)?(?:(?:la|le|les)\s+|l')?"
+    r"(?P<mention>.+?)\s*(?:\b(?:en|pour|sur)\s+(?:19|20)\d{2}\b)?[\s?.!]*$"
+)
+_GENERIC_MENTION = frozenset({"un", "une", "acheteur", "donne", "donnee", "certain",
+                              "quelconque", "ce", "cet", "cette", "chaque"})
 
 
 @dataclass(frozen=True)
@@ -126,6 +133,18 @@ def _theme(text: str, origin: list[int], original: str, region_start: int) -> st
     return original[origin[start]:origin[end - 1] + 1].strip(" ,;:'\"")
 
 
+def _buyer_mention(text: str, origin: list[int], original: str) -> tuple[str, int] | None:
+    """Nom d'acheteur cité après « chez », avec sa position ; None s'il est générique."""
+    match = _BUYER_MENTION.search(text)
+    if match is None:
+        return None
+    words = set(re.split(r"[^a-z0-9]+", match.group("mention"))) - {""}
+    if not words or words <= _GENERIC_MENTION:
+        return None
+    start, end = match.span("mention")
+    return original[origin[start]:origin[end - 1] + 1].strip(" ,;:'\""), start
+
+
 def interpret(question: str) -> Interpretation | None:
     """Associe une question à une question de référence, ou renvoie None."""
     text, origin = _normalize(question)
@@ -137,6 +156,13 @@ def interpret(question: str) -> Interpretation | None:
     year_given = bool(_YEAR.search(text))
 
     regions = _find_regions(text)
+    if _contains(text, *_HOLDER_WORDS) and "chez" in text and not _BUYER_ID.search(text):
+        mention = _buyer_mention(text, origin, question)
+        # Une région hors du nom de l'acheteur serait un filtre que Q2 n'applique pas.
+        if mention is None or any(start < mention[1] for _, start in regions):
+            return None
+        return _make(2, buyer_name=mention[0], year=year)
+
     if regions:
         codes = {code for code, _ in regions}
         if len(codes) != 1 or not codes <= REGIONS.keys():
@@ -157,8 +183,7 @@ def interpret(question: str) -> Interpretation | None:
     if _contains(text, "plusieurs acheteurs", "acheteurs differents",
                  "differents acheteurs"):
         return _make(6, year=year)
-    if _contains(text, "titulaire", "fournisseur", "prestataire", "entreprise",
-                 "societe"):
+    if _contains(text, *_HOLDER_WORDS):
         buyer = _BUYER_ID.search(text)
         if buyer is None:
             return None
