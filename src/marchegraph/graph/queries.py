@@ -1131,19 +1131,65 @@ def find_holder_name_variants(
     )
 
 
+ISSUE_EXAMPLES = 5
+
+ISSUE_MARKET_LABELS_QUERY = """
+UNWIND $node_ids AS node_id
+MATCH (market:Marche {source_id: $source_id, uid: node_id})
+RETURN node_id, head(coalesce(market.objet_values, [])) AS label
+"""
+
+ISSUE_VERSION_LABELS_QUERY = """
+UNWIND $versions AS item
+MATCH (version:Modification {source_id: $source_id, uid: item.uid,
+                             modification_id: item.modification_id})
+RETURN item.node_id AS node_id, head(coalesce(version.objet_values, [])) AS label
+"""
+
+
+def _issue_example_labels(session: Session, records) -> dict[tuple[str, str], str]:
+    """Objet déclaré des premiers exemples de chaque signal, par (type, identifiant)."""
+    markets: set[str] = set()
+    versions: dict[str, dict] = {}
+    for record in records:
+        for node_id in tuple(record["sample_node_ids"])[:ISSUE_EXAMPLES]:
+            if record["node_type"] == "Marche":
+                markets.add(node_id)
+            else:
+                uid, _, modification_id = node_id.rpartition(":")
+                if modification_id.isdigit():
+                    versions[node_id] = {"node_id": node_id, "uid": uid,
+                                         "modification_id": int(modification_id)}
+    labels: dict[tuple[str, str], str] = {}
+    if markets:
+        for row in session.run(ISSUE_MARKET_LABELS_QUERY, source_id=DATASET_ID,
+                               node_ids=sorted(markets)):
+            labels[("Marche", row["node_id"])] = row["label"]
+    if versions:
+        for row in session.run(ISSUE_VERSION_LABELS_QUERY, source_id=DATASET_ID,
+                               versions=list(versions.values())):
+            labels[("Modification", row["node_id"])] = row["label"]
+    return labels
+
+
 def summarize_graph_data_issues(
     session: Session,
 ) -> QueryResponse[DataQualityIssue]:
-    records = session.run(
+    records = list(session.run(
         DATA_QUALITY_ISSUES_QUERY,
         source_id=DATASET_ID,
-    )
+    ))
+    labels = _issue_example_labels(session, records)
     rows: list[QueryRow[DataQualityIssue]] = []
     for record in records:
         sample_node_ids = tuple(record["sample_node_ids"])
         affected_count = int(record["affected_record_count"])
         issue_code = record["issue"]
         node_type = record["node_type"]
+        examples = tuple(
+            f"{node_id} : {labels.get((node_type, node_id)) or '(objet absent)'}"
+            for node_id in sample_node_ids[:ISSUE_EXAMPLES]
+        )
         evidence = tuple(
             EvidenceReference(
                 node_type,
@@ -1159,6 +1205,7 @@ def summarize_graph_data_issues(
                     node_type=node_type,
                     issue_code=issue_code,
                     affected_record_count=affected_count,
+                    examples=examples,
                 ),
                 evidence=evidence,
                 evidence_complete=affected_count <= len(sample_node_ids),
@@ -1170,6 +1217,8 @@ def summarize_graph_data_issues(
         "automatiquement arbitrée.",
         "Les preuves listent jusqu'à 25 exemples par signal ; les comptes "
         "portent sur tous les nœuds du snapshot.",
+        f"Chaque signal cite au plus {ISSUE_EXAMPLES} marchés ou versions en "
+        "exemple, avec leur objet déclaré.",
     )
     return QueryResponse(
         question_id=10,

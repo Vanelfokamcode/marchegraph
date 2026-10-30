@@ -67,11 +67,14 @@ def _plain(obj):
 
 
 def _shorten(value):
-    """Listes internes limitées à MAX_MODEL_ROWS éléments pour garder un prompt court."""
+    """Listes internes limitées à MAX_MODEL_ROWS éléments, avec leur vrai total."""
     if isinstance(value, dict):
         return {key: _shorten(item) for key, item in value.items()}
     if isinstance(value, list):
-        return [_shorten(item) for item in value[:MAX_MODEL_ROWS]]
+        items = [_shorten(item) for item in value[:MAX_MODEL_ROWS]]
+        if len(value) > MAX_MODEL_ROWS:
+            return {"extrait": items, "nombre_total": len(value)}
+        return items
     return value
 
 
@@ -100,8 +103,13 @@ def _numbers(text: str) -> set[Decimal]:
 def _list_lengths(value) -> set[Decimal]:
     lengths: set[Decimal] = set()
     if isinstance(value, dict):
-        for item in value.values():
-            lengths |= _list_lengths(item)
+        for key, item in value.items():
+            # La longueur d'un extrait n'est pas un fait : seul `nombre_total` l'est.
+            if key == "extrait":
+                for element in item:
+                    lengths |= _list_lengths(element)
+            else:
+                lengths |= _list_lengths(item)
     elif isinstance(value, list):
         lengths.add(Decimal(len(value)))
         for item in value:

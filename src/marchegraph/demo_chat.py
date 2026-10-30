@@ -29,16 +29,19 @@ def main() -> None:
     import streamlit as st
     from neo4j import READ_ACCESS, GraphDatabase
 
+    from marchegraph.graph.dimension_values import load_suggestions
     from marchegraph.graph.load_initial_awards import DATASET_ID
     from marchegraph.graph.neo4j_config import (
         LocalNeo4jURLError,
         validate_local_neo4j_uri,
     )
-    from marchegraph.queries.assistant import EntityChoice
+    from marchegraph.queries.assistant import EntityChoice, answer_guided
     from marchegraph.queries.assistant import answer as ask
     from marchegraph.queries.assistant import model_from_env
-    from marchegraph.queries.entity_lookup import option_label
+    from marchegraph.queries.catalogue import GROUPINGS, MEASURES, CatalogueRefusal
+    from marchegraph.queries.entity_lookup import option_label, plural
     from marchegraph.queries.local_model import LocalModelURLError
+    from marchegraph.queries.suggestions import describe, examples, guided_query
 
     st.set_page_config(page_title="MarchéGraph (démo)")
     st.title("MarchéGraph : démo locale")
@@ -67,6 +70,17 @@ def main() -> None:
     def read_session():
         return get_driver().session(database=database, default_access_mode=READ_ACCESS)
 
+    @st.cache_resource(show_spinner="Lecture des valeurs présentes dans le graphe…")
+    def get_suggestions():
+        with read_session() as s:
+            return load_suggestions(s)
+
+    try:
+        suggestions = get_suggestions()
+    except Exception as exc:  # démo : on garde les exemples fixes
+        st.warning(f"Valeurs du graphe indisponibles : {exc}")
+        suggestions = None
+
     with st.sidebar:
         st.subheader("Contenu du graphe")
         try:
@@ -83,8 +97,39 @@ def main() -> None:
         except Exception as exc:  # démo : on affiche l'erreur telle quelle
             st.error(f"Connexion impossible : {exc}")
         st.subheader("Questions prises en charge")
-        for example in EXAMPLES:
+        for example in examples(suggestions) if suggestions else EXAMPLES:
             st.markdown(f"- {example}")
+
+    guided = None
+    if suggestions is not None:
+        with st.expander("Composer une question guidée"), st.form("guided"):
+            def pick(label, values):
+                names = {v.value: f"{v.label} ({plural(v.market_count, 'marché')})"
+                         for v in values}
+                return st.selectbox(label, [None, *names],
+                                    format_func=lambda o: "Tous" if o is None else names[o])
+
+            measure = st.selectbox("Mesure", list(MEASURES), format_func=MEASURES.get)
+            grouping = st.selectbox("Regroupement", list(GROUPINGS),
+                                    format_func=GROUPINGS.get)
+            year = st.selectbox("Année", sorted((int(v.value) for v in suggestions.years),
+                                               reverse=True))
+            filters = {
+                "region_code": pick("Région de l'acheteur", suggestions.regions),
+                "cpv_family": pick("Famille CPV", suggestions.cpv_families),
+                "procedure": pick("Procédure", suggestions.procedures),
+                "nature": pick("Nature", suggestions.natures),
+                "buyer_id": pick(f"Acheteur (les plus actifs en {suggestions.year})",
+                                 suggestions.buyers),
+            }
+            if st.form_submit_button("Lancer"):
+                try:
+                    query = guided_query(suggestions, measure=measure, grouping=grouping,
+                                         year=year, **filters)
+                except CatalogueRefusal as refusal:
+                    guided = (None, str(refusal))
+                else:
+                    guided = (query, describe(query, suggestions))
 
     def show(response) -> None:
         st.write(f"{len(response.rows)} ligne(s) de résultat.")
@@ -107,7 +152,10 @@ def main() -> None:
 
     pending = st.session_state.pop("choice", None)
     typed = st.chat_input("Posez une question en français")
-    question = pending[0] if pending else typed
+    if guided is not None:
+        question = guided[1] if guided[0] is not None else "Question guidée"
+    else:
+        question = pending[0] if pending else typed
     if not question:
         return
     with st.chat_message("user"):
@@ -115,13 +163,21 @@ def main() -> None:
     with st.chat_message("assistant"):
         try:
             with read_session() as s:
-                result = ask(question, s, generate,
-                             buyer_id=pending[1] if pending else None)
+                if guided is None:
+                    result = ask(question, s, generate,
+                                 buyer_id=pending[1] if pending else None)
+                elif guided[0] is not None:
+                    result = answer_guided(guided[0], question, s, generate)
+                else:
+                    result = None
         except Exception as exc:
             answer = f"Erreur pendant la requête : {exc}"
             st.error(answer)
         else:
-            if result is None:
+            if result is None and guided is not None:
+                answer = f"Je m'abstiens : {guided[1]}"
+                st.write(answer)
+            elif result is None:
                 answer = f"{ABSTENTION_TEXT} Voir la liste à gauche."
                 st.write(answer)
             elif isinstance(result, EntityChoice) and not result.options:

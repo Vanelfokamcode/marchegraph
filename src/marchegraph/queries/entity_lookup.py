@@ -87,14 +87,14 @@ def organisation(siren: str, members, market_count: int, establishments: int) ->
                      market_count, establishments)
 
 
-def _plural(count: int, word: str) -> str:
+def plural(count: int, word: str) -> str:
     return f"{count} {word}{'s' if count > 1 else ''}"
 
 
 def option_label(option: Candidate) -> str:
     name = ", ".join(option.names[:2]) or option.identifier
-    markets = _plural(option.market_count, "marché")
+    markets = plural(option.market_count, "marché")
     if option.establishments > 1:
-        return (f"{name} : tout l'organisme, {_plural(option.establishments, 'établissement')}"
+        return (f"{name} : tout l'organisme, {plural(option.establishments, 'établissement')}"
                 f" (SIREN {option.identifier}, {markets})")
     return f"{name} ({option.identifier}, {markets})"

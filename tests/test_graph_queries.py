@@ -510,7 +510,11 @@ class GraphQueryTests(unittest.TestCase):
                             f"uid-{index:02}" for index in range(25)
                         ],
                     }
-                ]
+                ],
+                queries.ISSUE_MARKET_LABELS_QUERY: [
+                    {"node_id": "uid-00", "label": "Travaux de voirie"},
+                    {"node_id": "uid-01", "label": None},
+                ],
             }
         )
 
@@ -518,6 +522,12 @@ class GraphQueryTests(unittest.TestCase):
 
         self.assertEqual(response.question_id, 10)
         self.assertEqual(response.rows[0].result.affected_record_count, 30)
+        self.assertEqual(
+            response.rows[0].result.examples[:2],
+            ("uid-00 : Travaux de voirie", "uid-01 : (objet absent)"),
+        )
+        self.assertEqual(len(response.rows[0].result.examples), 5)
+        self.assertEqual(len(session.calls[1][1]["node_ids"]), 5)
         self.assertFalse(response.rows[0].evidence_complete)
         self.assertEqual(len(response.rows[0].evidence), 25)
         self.assertEqual(response.rows[0].evidence[0].node_type, "Marche")

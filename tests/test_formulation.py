@@ -159,15 +159,30 @@ class FormulationTests(unittest.TestCase):
         self.assertEqual(_plain(Decimal("81234567.50")), "81234567.50")
 
     def test_inner_lists_are_shortened_for_the_model(self) -> None:
-        buyers = tuple(f"{i:014d}" for i in range(40))
+        buyers = tuple(f"2100000000{i:04d}" for i in range(40))
         response = QueryResponse(
             question_id=6,
             rows=(QueryRow(MultiBuyerHolder("SIRET", "00000000000031", ("T",),
                                             buyers, 40), EVIDENCE),),
         )
         row = payload(response)["rows"][0]
-        self.assertEqual(len(row["buyer_ids"]), 10)
+        self.assertEqual(len(row["buyer_ids"]["extrait"]), 10)
+        self.assertEqual(row["buyer_ids"]["nombre_total"], 40)
         self.assertEqual(row["market_count"], 40)
+
+    def test_excerpt_length_is_not_accepted_as_a_count(self) -> None:
+        buyers = tuple(f"2100000000{i:04d}" for i in range(39))
+        response = QueryResponse(
+            question_id=6,
+            rows=(QueryRow(MultiBuyerHolder("SIRET", "00000000000031", ("T",),
+                                            buyers, 45), EVIDENCE),),
+        )
+        wrong = formulate(QUESTION, LABEL, response,
+                          FakeModel("Ce titulaire travaille avec 10 acheteurs."))
+        self.assertEqual(wrong.source, "abstention")
+        right = formulate(QUESTION, LABEL, response,
+                          FakeModel("Ce titulaire travaille avec 39 acheteurs."))
+        self.assertEqual(right.source, "modele")
 
 
 class LocalModelTests(unittest.TestCase):
