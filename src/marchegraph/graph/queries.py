@@ -256,6 +256,29 @@ ORDER BY market_count DESC, identifier_type ASC, identifier_value ASC
 LIMIT $limit
 """
 
+# Un SIREN (9 chiffres) regroupe tous les établissements (SIRET) d'un même organisme.
+HOLDER_RANKING_BY_SIREN_QUERY = """
+MATCH (buyer:Acheteur {source_id: $source_id})
+WHERE buyer.id STARTS WITH $siren AND size(buyer.id) = 14
+MATCH (market:Marche {source_id: $source_id})-[:A_ACHETEUR]->(buyer)
+MATCH (market)-[:A_TITULAIRE]->(holder:Titulaire {source_id: $source_id})
+WHERE market.annee = $year
+WITH holder, count(DISTINCT market.uid) AS market_count,
+     collect(DISTINCT [market.uid, buyer.id]) AS market_buyers
+RETURN holder.identifier_type AS identifier_type,
+       holder.identifier_value AS identifier_value,
+       coalesce(holder.nom_values, []) AS names,
+       market_count, market_buyers
+ORDER BY market_count DESC, identifier_type ASC, identifier_value ASC
+LIMIT $limit
+"""
+
+BUYER_ESTABLISHMENTS_QUERY = """
+MATCH (buyer:Acheteur {source_id: $source_id})
+WHERE buyer.id STARTS WITH $siren AND size(buyer.id) = 14
+RETURN count(buyer) AS establishment_count
+"""
+
 NATURE_COUNTS_QUERY = """
 MATCH (market:Marche {source_id: $source_id})
 WHERE market.annee = $year
@@ -610,6 +633,8 @@ def rank_holders_for_buyer(
     limit: int = 10,
 ) -> QueryResponse[HolderRanking]:
     _validate_limit(limit)
+    if len(buyer_id) == 9 and buyer_id.isdigit():
+        return _rank_holders_for_organisation(session, buyer_id, year=year, limit=limit)
     records = session.run(
         HOLDER_RANKING_QUERY,
         source_id=DATASET_ID,
@@ -644,10 +669,73 @@ def rank_holders_for_buyer(
         )
         for record in records
     )
+    limitations = [f"Le classement est limité aux {limit} premiers titulaires."]
+    if len(buyer_id) == 14 and buyer_id.isdigit():
+        others = _establishment_count(session, buyer_id[:9]) - 1
+        if others > 0:
+            limitations.append(
+                f"Le classement porte sur le seul établissement {buyer_id} ; "
+                f"{others} autre(s) établissement(s) du même organisme "
+                f"(SIREN {buyer_id[:9]}) ne sont pas inclus."
+            )
     return QueryResponse(
         question_id=2,
         rows=rows,
-        limitations=(f"Le classement est limité aux {limit} premiers titulaires.",),
+        limitations=tuple(limitations),
+    )
+
+
+def _establishment_count(session: Session, siren: str) -> int:
+    record = session.run(
+        BUYER_ESTABLISHMENTS_QUERY, source_id=DATASET_ID, siren=siren
+    ).single()
+    return int(record["establishment_count"]) if record else 0
+
+
+def _rank_holders_for_organisation(
+    session: Session, siren: str, *, year: int, limit: int
+) -> QueryResponse[HolderRanking]:
+    records = session.run(
+        HOLDER_RANKING_BY_SIREN_QUERY,
+        source_id=DATASET_ID,
+        siren=siren,
+        year=year,
+        limit=limit,
+    )
+    rows = tuple(
+        QueryRow(
+            result=HolderRanking(
+                identifier_type=record["identifier_type"],
+                identifier_value=record["identifier_value"],
+                names=_names(record["names"]),
+                market_count=record["market_count"],
+            ),
+            evidence=tuple(
+                evidence_item
+                for uid, buyer in sorted({tuple(pair) for pair in record["market_buyers"]})
+                for evidence_item in (
+                    EvidenceReference("Marche", uid, "A_ACHETEUR", buyer),
+                    EvidenceReference(
+                        "Marche",
+                        uid,
+                        "A_TITULAIRE",
+                        f"{record['identifier_type']}:"
+                        f"{record['identifier_value']}",
+                    ),
+                )
+            ),
+        )
+        for record in records
+    )
+    establishments = _establishment_count(session, siren)
+    return QueryResponse(
+        question_id=2,
+        rows=rows,
+        limitations=(
+            f"Le classement est limité aux {limit} premiers titulaires.",
+            f"Le classement regroupe les {establishments} établissement(s) de "
+            f"l'organisme SIREN {siren} ; chaque marché est compté une fois.",
+        ),
     )
 
 
@@ -1043,19 +1131,65 @@ def find_holder_name_variants(
     )
 
 
+ISSUE_EXAMPLES = 5
+
+ISSUE_MARKET_LABELS_QUERY = """
+UNWIND $node_ids AS node_id
+MATCH (market:Marche {source_id: $source_id, uid: node_id})
+RETURN node_id, head(coalesce(market.objet_values, [])) AS label
+"""
+
+ISSUE_VERSION_LABELS_QUERY = """
+UNWIND $versions AS item
+MATCH (version:Modification {source_id: $source_id, uid: item.uid,
+                             modification_id: item.modification_id})
+RETURN item.node_id AS node_id, head(coalesce(version.objet_values, [])) AS label
+"""
+
+
+def _issue_example_labels(session: Session, records) -> dict[tuple[str, str], str]:
+    """Objet déclaré des premiers exemples de chaque signal, par (type, identifiant)."""
+    markets: set[str] = set()
+    versions: dict[str, dict] = {}
+    for record in records:
+        for node_id in tuple(record["sample_node_ids"])[:ISSUE_EXAMPLES]:
+            if record["node_type"] == "Marche":
+                markets.add(node_id)
+            else:
+                uid, _, modification_id = node_id.rpartition(":")
+                if modification_id.isdigit():
+                    versions[node_id] = {"node_id": node_id, "uid": uid,
+                                         "modification_id": int(modification_id)}
+    labels: dict[tuple[str, str], str] = {}
+    if markets:
+        for row in session.run(ISSUE_MARKET_LABELS_QUERY, source_id=DATASET_ID,
+                               node_ids=sorted(markets)):
+            labels[("Marche", row["node_id"])] = row["label"]
+    if versions:
+        for row in session.run(ISSUE_VERSION_LABELS_QUERY, source_id=DATASET_ID,
+                               versions=list(versions.values())):
+            labels[("Modification", row["node_id"])] = row["label"]
+    return labels
+
+
 def summarize_graph_data_issues(
     session: Session,
 ) -> QueryResponse[DataQualityIssue]:
-    records = session.run(
+    records = list(session.run(
         DATA_QUALITY_ISSUES_QUERY,
         source_id=DATASET_ID,
-    )
+    ))
+    labels = _issue_example_labels(session, records)
     rows: list[QueryRow[DataQualityIssue]] = []
     for record in records:
         sample_node_ids = tuple(record["sample_node_ids"])
         affected_count = int(record["affected_record_count"])
         issue_code = record["issue"]
         node_type = record["node_type"]
+        examples = tuple(
+            f"{node_id} : {labels.get((node_type, node_id)) or '(objet absent)'}"
+            for node_id in sample_node_ids[:ISSUE_EXAMPLES]
+        )
         evidence = tuple(
             EvidenceReference(
                 node_type,
@@ -1071,6 +1205,7 @@ def summarize_graph_data_issues(
                     node_type=node_type,
                     issue_code=issue_code,
                     affected_record_count=affected_count,
+                    examples=examples,
                 ),
                 evidence=evidence,
                 evidence_complete=affected_count <= len(sample_node_ids),
@@ -1082,6 +1217,8 @@ def summarize_graph_data_issues(
         "automatiquement arbitrée.",
         "Les preuves listent jusqu'à 25 exemples par signal ; les comptes "
         "portent sur tous les nœuds du snapshot.",
+        f"Chaque signal cite au plus {ISSUE_EXAMPLES} marchés ou versions en "
+        "exemple, avec leur objet déclaré.",
     )
     return QueryResponse(
         question_id=10,

@@ -129,6 +129,7 @@ class DataQualityIssue:
     node_type: str
     issue_code: str
     affected_record_count: int
+    examples: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

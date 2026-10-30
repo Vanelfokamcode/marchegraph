@@ -85,3 +85,14 @@ covers = ["R4"]
 after = [2]
 hitl = true
 risk = "low"
+
+[[entry]]
+id = 9
+type = "story"
+title = "Regrouper les établissements d'un même titulaire par SIREN"
+description = "Un titulaire identifié par SIRET (14 chiffres) peut apparaître sous plusieurs établissements d'une même entreprise (ex. TBES, SIREN 394366215, deux SIRET dans le classement de la Ville de Paris). Ajoute un regroupement par SIREN (9 premiers chiffres) pour les classements de titulaires (question 2, question 6, regroupement « titulaire » du catalogue) et pour la résolution d'un titulaire cité par son nom, comme déjà fait pour les acheteurs. Les identifiants non SIRET restent non regroupés et sont signalés. Chaque marché est compté une fois ; les preuves gardent l'établissement réel ; une limite indique le nombre d'établissements regroupés. Le niveau par défaut (établissement ou entreprise) est décidé par l'utilisateur."
+verify = "Sur fixtures, deux SIRET de même SIREN forment une seule ligne avec le nombre de marchés distincts et les preuves par établissement ; le niveau établissement reste disponible et redonne les résultats actuels ; les titulaires non SIRET sont comptés à part et signalés ; les dix questions de l'epic 4 restent correctes au niveau établissement."
+covers = ["R4"]
+after = [1, 2]
+hitl = true
+risk = "medium"

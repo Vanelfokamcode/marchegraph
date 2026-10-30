@@ -7,11 +7,21 @@ seule et ne renvoie que des candidats avec identifiant exact et score.
 from __future__ import annotations
 
 import os
+from dataclasses import replace
 
 from neo4j import Session
 
 from marchegraph.graph import queries as reference_queries
-from marchegraph.queries.entity_lookup import Candidate, Resolution, decide, lucene_query
+from marchegraph.queries.entity_lookup import (
+    Candidate,
+    Resolution,
+    by_market_count,
+    decide,
+    lucene_query,
+    organisation,
+    shared_sirens,
+    siren_of,
+)
 
 INDEXES = {"acheteur": "acheteur_noms", "titulaire": "titulaire_noms"}
 ANALYZER = "standard-folding"
@@ -43,6 +53,14 @@ RETURN node.identifier_type + ':' + node.identifier_value AS identifier,
        COUNT { (:Marche)-[:A_TITULAIRE]->(node) } AS market_count
 """,
 }
+
+ORGANISATION_QUERY = """
+MATCH (buyer:Acheteur {source_id: $source_id})
+WHERE buyer.id STARTS WITH $siren AND size(buyer.id) = 14
+OPTIONAL MATCH (market:Marche)-[:A_ACHETEUR]->(buyer)
+RETURN count(DISTINCT buyer) AS establishments,
+       count(DISTINCT market) AS market_count
+"""
 
 
 def create_search_indexes(session: Session) -> None:
@@ -78,7 +96,21 @@ def search(session: Session, kind: str, mention: str) -> list[Candidate]:
 
 
 def resolve(session: Session, kind: str, mention: str) -> Resolution:
-    return decide(mention, search(session, kind, mention))
+    resolution = decide(mention, search(session, kind, mention))
+    if resolution.status != "choose":
+        return resolution
+    return replace(resolution, options=with_organisations(session, resolution.options))
+
+
+def with_organisations(session: Session, options) -> tuple[Candidate, ...]:
+    groups = []
+    for siren in shared_sirens(options):
+        record = session.run(ORGANISATION_QUERY, siren=siren,
+                             source_id=reference_queries.DATASET_ID).single()
+        members = [o for o in options if siren_of(o.identifier) == siren]
+        groups.append(organisation(siren, members, int(record["market_count"]),
+                                   int(record["establishments"])))
+    return by_market_count([*groups, *options])
 
 
 def main() -> int:

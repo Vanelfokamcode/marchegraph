@@ -94,6 +94,46 @@ class GraphQueryTests(unittest.TestCase):
         )
         self.assertEqual(len(response.rows[0].evidence), 4)
 
+    def test_holders_of_a_whole_organisation_by_siren(self):
+        session = FakeSession(
+            {
+                queries.HOLDER_RANKING_BY_SIREN_QUERY: [
+                    {
+                        "identifier_type": "SIRET",
+                        "identifier_value": "00000000000001",
+                        "names": ["Entreprise A"],
+                        "market_count": 2,
+                        "market_buyers": [["uid-2", "21750001600019"],
+                                          ["uid-1", "21750001630040"]],
+                    }
+                ],
+                queries.BUYER_ESTABLISHMENTS_QUERY: [{"establishment_count": 12}],
+            }
+        )
+
+        response = queries.rank_holders_for_buyer(session, "217500016")
+
+        self.assertEqual(session.calls[0][1]["siren"], "217500016")
+        self.assertIn(
+            queries.EvidenceReference("Marche", "uid-1", "A_ACHETEUR", "21750001630040"),
+            response.rows[0].evidence,
+        )
+        self.assertEqual(len(response.rows[0].evidence), 4)
+        self.assertIn("12 établissement(s)", response.limitations[1])
+
+    def test_single_establishment_warns_about_its_siblings(self):
+        session = FakeSession(
+            {
+                queries.HOLDER_RANKING_QUERY: [],
+                queries.BUYER_ESTABLISHMENTS_QUERY: [{"establishment_count": 12}],
+            }
+        )
+
+        response = queries.rank_holders_for_buyer(session, "21750001600019")
+
+        self.assertIn("11 autre(s) établissement(s)", response.limitations[1])
+        self.assertIn("SIREN 217500016", response.limitations[1])
+
     def test_nature_and_procedure_summaries_keep_evidence_and_limits_separate(self):
         session = FakeSession(
             {
@@ -470,7 +510,11 @@ class GraphQueryTests(unittest.TestCase):
                             f"uid-{index:02}" for index in range(25)
                         ],
                     }
-                ]
+                ],
+                queries.ISSUE_MARKET_LABELS_QUERY: [
+                    {"node_id": "uid-00", "label": "Travaux de voirie"},
+                    {"node_id": "uid-01", "label": None},
+                ],
             }
         )
 
@@ -478,6 +522,12 @@ class GraphQueryTests(unittest.TestCase):
 
         self.assertEqual(response.question_id, 10)
         self.assertEqual(response.rows[0].result.affected_record_count, 30)
+        self.assertEqual(
+            response.rows[0].result.examples[:2],
+            ("uid-00 : Travaux de voirie", "uid-01 : (objet absent)"),
+        )
+        self.assertEqual(len(response.rows[0].result.examples), 5)
+        self.assertEqual(len(session.calls[1][1]["node_ids"]), 5)
         self.assertFalse(response.rows[0].evidence_complete)
         self.assertEqual(len(response.rows[0].evidence), 25)
         self.assertEqual(response.rows[0].evidence[0].node_type, "Marche")

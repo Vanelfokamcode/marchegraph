@@ -10,6 +10,7 @@ from dataclasses import dataclass, replace
 
 from marchegraph.graph.contracts import QueryResponse
 from marchegraph.queries import dispatch
+from marchegraph.queries.catalogue import CatalogueQuery
 from marchegraph.queries.entity_lookup import Candidate, Resolution
 from marchegraph.queries.formulation import Formulation, Generate, formulate
 from marchegraph.queries.interpretation import Interpretation, interpret
@@ -89,6 +90,19 @@ def answer(
     response = dispatch.run(session, interpretation)
     formulation = formulate(question, interpretation.label, response, generate)
     return AssistantAnswer(interpretation, response, formulation)
+
+
+def answer_guided(
+    query: CatalogueQuery, description: str, session, generate: Generate | None
+) -> AssistantAnswer:
+    """Requête composée par la saisie guidée : catalogue, puis formulation contrôlée."""
+    from marchegraph.graph.catalogue_queries import CATALOGUE_QUESTION_ID, run_catalogue
+
+    response = run_catalogue(session, query)
+    formulation = formulate(description, query.label, response, generate)
+    return AssistantAnswer(Interpretation(CATALOGUE_QUESTION_ID, query.label,
+                                          {"query": query}),
+                           response, formulation)
 
 
 def main() -> int:

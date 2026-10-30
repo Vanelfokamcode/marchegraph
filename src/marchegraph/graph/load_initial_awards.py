@@ -110,6 +110,15 @@ CREATE_CONSTRAINTS = (
         holder.identifier_value
     ) IS UNIQUE
     """,
+    # Sans ces index, un jeu de fixtures chargé à côté du snapshot oblige à parcourir tout le graphe.
+    """
+    CREATE INDEX marchegraph_market_source IF NOT EXISTS
+    FOR (market:Marche) ON (market.source_id)
+    """,
+    """
+    CREATE INDEX marchegraph_modification_source IF NOT EXISTS
+    FOR (version:Modification) ON (version.source_id)
+    """,
 )
 
 UPSERT_BUYERS = """
@@ -525,6 +534,7 @@ def write_batches(
 def _write_constraints(session: Session) -> None:
     for query in CREATE_CONSTRAINTS:
         session.run(query).consume()
+    session.run("CALL db.awaitIndexes(600)").consume()
 
 
 def _graph_counts(session: Session) -> dict[int, AnnualImportCounts]:
