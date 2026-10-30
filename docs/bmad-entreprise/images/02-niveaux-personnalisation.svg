@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" font-family="Segoe UI, Arial, sans-serif" font-size="14">
+  <rect width="1200" height="620" fill="#ffffff"/>
+  <text x="600" y="34" text-anchor="middle" font-size="22" font-weight="bold">Les trois niveaux de personnalisation</text>
+
+  <!-- Stack -->
+  <rect x="60" y="430" width="560" height="110" rx="12" fill="#f1f3f5" stroke="#495057"/>
+  <text x="340" y="465" text-anchor="middle" font-weight="bold" font-size="16">Socle : BMAD-METHOD (MIT, © BMad Code, LLC)</text>
+  <text x="340" y="490" text-anchor="middle">skills officielles, scripts, modules bmod-method / bmod-core-tools</text>
+  <text x="340" y="514" text-anchor="middle" font-size="12">nom « BMad » = marque déposée : pas de droit d'usage pour un produit dérivé</text>
+
+  <rect x="90" y="320" width="500" height="100" rx="12" fill="#ebfbee" stroke="#2f9e44"/>
+  <text x="340" y="352" text-anchor="middle" font-weight="bold" font-size="16">Niveau 1 : réglages d'équipe (sans fork)</text>
+  <text x="340" y="376" text-anchor="middle">_bmad/custom/&lt;skill&gt;.toml : principes, faits, contrôles,</text>
+  <text x="340" y="398" text-anchor="middle">modèles de tickets, étapes avant/après, menu, tracker</text>
+
+  <rect x="120" y="210" width="440" height="100" rx="12" fill="#e7f5ff" stroke="#1c7ed6"/>
+  <text x="340" y="242" text-anchor="middle" font-weight="bold" font-size="16">Niveau 2 : module de l'organisation</text>
+  <text x="340" y="266" text-anchor="middle">vos agents et skills métier, votre bmod.toml,</text>
+  <text x="340" y="288" text-anchor="middle">installés par npx skills add org/depot</text>
+
+  <rect x="150" y="100" width="380" height="100" rx="12" fill="#f3f0ff" stroke="#7048e8"/>
+  <text x="340" y="132" text-anchor="middle" font-weight="bold" font-size="16">Niveau 3 : distribution interne</text>
+  <text x="340" y="156" text-anchor="middle">socle figé et relu + niveaux 1 et 2,</text>
+  <text x="340" y="178" text-anchor="middle">versionnée, renommée, livrée aux équipes</text>
+
+  <!-- Right side comparison -->
+  <text x="890" y="90" text-anchor="middle" font-weight="bold" font-size="16">Ce que chaque niveau apporte</text>
+
+  <rect x="660" y="110" width="480" height="110" rx="10" fill="#f3f0ff" stroke="#7048e8"/>
+  <text x="680" y="136" font-weight="bold">Niveau 3</text>
+  <text x="680" y="158">+ contrôle total des versions et de la sécurité</text>
+  <text x="680" y="180">+ base d'une offre (« méthode maison »)</text>
+  <text x="680" y="202">– maintenance : réintégrer les nouveautés amont</text>
+
+  <rect x="660" y="235" width="480" height="110" rx="10" fill="#e7f5ff" stroke="#1c7ed6"/>
+  <text x="680" y="261" font-weight="bold">Niveau 2</text>
+  <text x="680" y="283">+ votre savoir-faire codé en agents réutilisables</text>
+  <text x="680" y="305">+ mises à jour amont conservées</text>
+  <text x="680" y="327">– à concevoir, tester et documenter</text>
+
+  <rect x="660" y="360" width="480" height="110" rx="10" fill="#ebfbee" stroke="#2f9e44"/>
+  <text x="680" y="386" font-weight="bold">Niveau 1</text>
+  <text x="680" y="408">+ immédiat, survit aux mises à jour</text>
+  <text x="680" y="430">+ règles de l'organisation appliquées partout</text>
+  <text x="680" y="452">– limité à ce que les skills exposent</text>
+
+  <rect x="660" y="485" width="480" height="70" rx="10" fill="#fff4e6" stroke="#e8590c"/>
+  <text x="680" y="512" font-weight="bold">Fork du socle (exception)</text>
+  <text x="680" y="536">seulement si un besoin précis l'exige ; garder la mention MIT</text>
+
+  <text x="340" y="580" text-anchor="middle" font-size="12" fill="#555">On empile : chaque niveau s'appuie sur le précédent sans le modifier.</text>
+</svg>

@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="660" viewBox="0 0 1240 660" font-family="Segoe UI, Arial, sans-serif" font-size="14">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#444"/>
+    </marker>
+  </defs>
+  <rect width="1240" height="660" fill="#ffffff"/>
+  <text x="620" y="34" text-anchor="middle" font-size="22" font-weight="bold">Architecture cible : de l'amont aux projets clients</text>
+
+  <!-- Upstream -->
+  <rect x="30" y="80" width="250" height="150" rx="12" fill="#f1f3f5" stroke="#495057"/>
+  <text x="155" y="110" text-anchor="middle" font-weight="bold">Amont public</text>
+  <text x="155" y="134" text-anchor="middle">github.com/bmad-code-org/</text>
+  <text x="155" y="154" text-anchor="middle">BMAD-METHOD (MIT)</text>
+  <text x="155" y="182" text-anchor="middle" font-size="12">stable v6.12 / v7 en préversion</text>
+  <text x="155" y="202" text-anchor="middle" font-size="12">modules officiels optionnels</text>
+
+  <!-- Intake -->
+  <rect x="330" y="80" width="230" height="150" rx="12" fill="#fff4e6" stroke="#e8590c"/>
+  <text x="445" y="110" text-anchor="middle" font-weight="bold">Sas d'entrée</text>
+  <text x="445" y="136" text-anchor="middle">veille des versions</text>
+  <text x="445" y="158" text-anchor="middle">revue sécurité des scripts</text>
+  <text x="445" y="180" text-anchor="middle">tests de non-régression</text>
+  <text x="445" y="202" text-anchor="middle">empreintes figées</text>
+  <line x1="280" y1="155" x2="328" y2="155" stroke="#444" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- Internal distribution -->
+  <rect x="610" y="60" width="600" height="250" rx="14" fill="#f3f0ff" stroke="#7048e8"/>
+  <text x="910" y="88" text-anchor="middle" font-weight="bold" font-size="16">Distribution interne « &lt;NomMéthode&gt; » (dépôt privé de l'organisation)</text>
+  <rect x="630" y="104" width="180" height="90" rx="8" fill="#ffffff" stroke="#868e96"/>
+  <text x="720" y="132" text-anchor="middle" font-weight="bold">Socle figé</text>
+  <text x="720" y="154" text-anchor="middle" font-size="12">copie relue de l'amont</text>
+  <text x="720" y="174" text-anchor="middle" font-size="12">+ LICENSE MIT conservée</text>
+  <rect x="825" y="104" width="180" height="90" rx="8" fill="#ebfbee" stroke="#2f9e44"/>
+  <text x="915" y="132" text-anchor="middle" font-weight="bold">Réglages maison</text>
+  <text x="915" y="154" text-anchor="middle" font-size="12">custom/*.toml par défaut</text>
+  <text x="915" y="174" text-anchor="middle" font-size="12">(niveau 1)</text>
+  <rect x="1020" y="104" width="175" height="90" rx="8" fill="#e7f5ff" stroke="#1c7ed6"/>
+  <text x="1107" y="132" text-anchor="middle" font-weight="bold">Module maison</text>
+  <text x="1107" y="154" text-anchor="middle" font-size="12">agents métier</text>
+  <text x="1107" y="174" text-anchor="middle" font-size="12">(niveau 2)</text>
+  <rect x="630" y="208" width="565" height="86" rx="8" fill="#ffffff" stroke="#868e96"/>
+  <text x="912" y="234" text-anchor="middle" font-weight="bold">Outillage</text>
+  <text x="912" y="256" text-anchor="middle" font-size="12">CI : validate_manifests, tests des scripts, lint des modèles · versions sémantiques</text>
+  <text x="912" y="276" text-anchor="middle" font-size="12">documentation · catalogue d'agents · changelog · responsable désigné</text>
+  <line x1="560" y1="155" x2="608" y2="155" stroke="#444" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- consumers -->
+  <rect x="40" y="380" width="350" height="200" rx="12" fill="#e8eefc" stroke="#3b5bdb"/>
+  <text x="215" y="410" text-anchor="middle" font-weight="bold">Projets internes</text>
+  <text x="215" y="436" text-anchor="middle">npx skills add org/&lt;nom&gt;-method</text>
+  <text x="215" y="460" text-anchor="middle">+ _bmad/custom/ du projet</text>
+  <text x="215" y="490" text-anchor="middle" font-size="12">ex. MarchéGraph = projet pilote :</text>
+  <text x="215" y="510" text-anchor="middle" font-size="12">données locales, spike modèle, seuils</text>
+
+  <rect x="445" y="380" width="350" height="200" rx="12" fill="#e6fcf5" stroke="#0ca678"/>
+  <text x="620" y="410" text-anchor="middle" font-weight="bold">Projets clients (mission)</text>
+  <text x="620" y="436" text-anchor="middle">même distribution, figée</text>
+  <text x="620" y="460" text-anchor="middle">+ réglages propres au client</text>
+  <text x="620" y="490" text-anchor="middle" font-size="12">artefacts (_bmad-output) livrés au client :</text>
+  <text x="620" y="510" text-anchor="middle" font-size="12">PRD, architecture, tickets, décisions</text>
+
+  <rect x="850" y="380" width="350" height="200" rx="12" fill="#fff9db" stroke="#f08c00"/>
+  <text x="1025" y="410" text-anchor="middle" font-weight="bold">Offre commerciale</text>
+  <text x="1025" y="436" text-anchor="middle">accompagnement + méthode</text>
+  <text x="1025" y="460" text-anchor="middle">packs sectoriels (agents métier)</text>
+  <text x="1025" y="484" text-anchor="middle">formation et transfert</text>
+  <text x="1025" y="514" text-anchor="middle" font-size="12">sous votre marque, jamais « BMad »</text>
+
+  <line x1="760" y1="310" x2="215" y2="378" stroke="#444" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="910" y1="310" x2="620" y2="378" stroke="#444" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="1060" y1="310" x2="1025" y2="378" stroke="#444" stroke-width="2" marker-end="url(#a)"/>
+
+  <path d="M215,580 L215,620 L1180,620 L1180,240 L1197,240" fill="none" stroke="#2f9e44" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#a)"/>
+  <text x="700" y="640" text-anchor="middle" font-size="12" fill="#2f9e44">Retours terrain → nouvelles règles et nouveaux agents dans la distribution (boucle d'amélioration)</text>
+</svg>

@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640" font-family="Segoe UI, Arial, sans-serif" font-size="14">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#444"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="640" fill="#ffffff"/>
+  <text x="600" y="34" text-anchor="middle" font-size="22" font-weight="bold">Comment une skill BMAD s'exécute (mécanique réelle, v7 installée)</text>
+
+  <!-- Assistant -->
+  <rect x="30" y="80" width="200" height="90" rx="10" fill="#e8eefc" stroke="#3b5bdb"/>
+  <text x="130" y="112" text-anchor="middle" font-weight="bold">Assistant IA</text>
+  <text x="130" y="134" text-anchor="middle">Copilot, Claude Code,</text>
+  <text x="130" y="154" text-anchor="middle">Codex…</text>
+
+  <!-- SKILL.md -->
+  <rect x="290" y="80" width="230" height="90" rx="10" fill="#fff4e6" stroke="#e8590c"/>
+  <text x="405" y="108" text-anchor="middle" font-weight="bold">1. Amorce SKILL.md</text>
+  <text x="405" y="130" text-anchor="middle">.agents/skills/&lt;skill&gt;/</text>
+  <text x="405" y="152" text-anchor="middle">« lance render_skill.py »</text>
+  <line x1="230" y1="125" x2="288" y2="125" stroke="#444" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- render -->
+  <rect x="580" y="80" width="270" height="90" rx="10" fill="#f3f0ff" stroke="#7048e8"/>
+  <text x="715" y="108" text-anchor="middle" font-weight="bold">2. _bmad/scripts/render_skill.py</text>
+  <text x="715" y="130" text-anchor="middle">fusion des couches + Jinja2</text>
+  <text x="715" y="152" text-anchor="middle">workflow.md → texte final</text>
+  <line x1="520" y1="125" x2="578" y2="125" stroke="#444" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- layers -->
+  <text x="715" y="215" text-anchor="middle" font-weight="bold">Couches fusionnées (de la plus faible à la plus forte)</text>
+  <rect x="470" y="230" width="230" height="56" rx="8" fill="#f8f9fa" stroke="#868e96"/>
+  <text x="585" y="254" text-anchor="middle">customize.toml (défauts)</text>
+  <text x="585" y="274" text-anchor="middle" font-size="12">écrasé à chaque mise à jour</text>
+  <rect x="730" y="230" width="230" height="56" rx="8" fill="#ebfbee" stroke="#2f9e44"/>
+  <text x="845" y="254" text-anchor="middle">_bmad/custom/&lt;skill&gt;.toml</text>
+  <text x="845" y="274" text-anchor="middle" font-size="12">équipe — versionné</text>
+  <rect x="470" y="300" width="230" height="56" rx="8" fill="#ebfbee" stroke="#2f9e44"/>
+  <text x="585" y="324" text-anchor="middle">&lt;skill&gt;.user.toml</text>
+  <text x="585" y="344" text-anchor="middle" font-size="12">personnel — ignoré par Git</text>
+  <rect x="730" y="300" width="230" height="56" rx="8" fill="#f8f9fa" stroke="#868e96"/>
+  <text x="845" y="324" text-anchor="middle">--set clé=valeur</text>
+  <text x="845" y="344" text-anchor="middle" font-size="12">une seule exécution</text>
+  <rect x="470" y="370" width="490" height="40" rx="8" fill="#f8f9fa" stroke="#868e96"/>
+  <text x="715" y="395" text-anchor="middle">_bmad/config.toml (config centrale : projet, dossier de sortie, initiative active)</text>
+  <line x1="715" y1="230" x2="715" y2="172" stroke="#444" stroke-width="2" marker-end="url(#a)"/>
+  <text x="980" y="262" font-size="12">Règles de fusion :</text>
+  <text x="980" y="280" font-size="12">• texte : remplacé</text>
+  <text x="980" y="298" font-size="12">• liste : complétée</text>
+  <text x="980" y="316" font-size="12">• table : clé par clé</text>
+  <text x="980" y="334" font-size="12">• menu : par « code »</text>
+
+  <!-- snapshot -->
+  <rect x="910" y="80" width="260" height="90" rx="10" fill="#e6fcf5" stroke="#0ca678"/>
+  <text x="1040" y="108" text-anchor="middle" font-weight="bold">3. Instantané figé</text>
+  <text x="1040" y="130" text-anchor="middle">_bmad/render/&lt;skill&gt;/&lt;hash&gt;/</text>
+  <text x="1040" y="152" text-anchor="middle">+ manifest.json (valeurs, hash)</text>
+  <line x1="850" y1="125" x2="908" y2="125" stroke="#444" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- agent -->
+  <rect x="30" y="460" width="300" height="120" rx="10" fill="#e8eefc" stroke="#3b5bdb"/>
+  <text x="180" y="490" text-anchor="middle" font-weight="bold">4. L'agent suit le workflow</text>
+  <text x="180" y="514" text-anchor="middle">persona (ex. Sofia, PO), principes,</text>
+  <text x="180" y="536" text-anchor="middle">menu SPEC / TICKETS / BOARD /</text>
+  <text x="180" y="558" text-anchor="middle">VALIDATE / REPLAN, garde-fous</text>
+  <path d="M1040,170 L1040,440 L180,440 L180,458" fill="none" stroke="#444" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- scripts -->
+  <rect x="380" y="460" width="260" height="120" rx="10" fill="#fff4e6" stroke="#e8590c"/>
+  <text x="510" y="490" text-anchor="middle" font-weight="bold">5. Scripts déterministes</text>
+  <text x="510" y="514" text-anchor="middle">tickets.py (statut, suite, pull)</text>
+  <text x="510" y="536" text-anchor="middle">read_store.py, memlog.py,</text>
+  <text x="510" y="558" text-anchor="middle">lint_spine.py (architecture)</text>
+  <line x1="330" y1="520" x2="378" y2="520" stroke="#444" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- outputs -->
+  <rect x="690" y="460" width="280" height="120" rx="10" fill="#ebfbee" stroke="#2f9e44"/>
+  <text x="830" y="490" text-anchor="middle" font-weight="bold">6. Artefacts du projet</text>
+  <text x="830" y="514" text-anchor="middle">_bmad-output/initiative-*/</text>
+  <text x="830" y="536" text-anchor="middle">initiative, architecture, epics,</text>
+  <text x="830" y="558" text-anchor="middle">tickets.toml, plans, .memlog.md</text>
+  <line x1="640" y1="520" x2="688" y2="520" stroke="#444" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="1010" y="460" width="160" height="120" rx="10" fill="#f8f9fa" stroke="#868e96"/>
+  <text x="1090" y="490" text-anchor="middle" font-weight="bold">7. Store</text>
+  <text x="1090" y="514" text-anchor="middle">dépôt Git</text>
+  <text x="1090" y="536" text-anchor="middle">ou GitHub, Jira,</text>
+  <text x="1090" y="558" text-anchor="middle">Linear, Notion…</text>
+  <line x1="970" y1="520" x2="1008" y2="520" stroke="#444" stroke-width="2" marker-end="url(#a)"/>
+
+  <text x="600" y="620" text-anchor="middle" font-size="12" fill="#555">Les modules (bmod.toml) déclarent les skills et leur version ; skills-lock.json fige l'empreinte de chaque skill installée.</text>
+</svg>
