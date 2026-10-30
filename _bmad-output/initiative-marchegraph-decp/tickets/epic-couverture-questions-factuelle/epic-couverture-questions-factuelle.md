@@ -103,3 +103,10 @@ l'assistant demande à l'utilisateur de choisir ou s'abstient.
   recherche par libellé. Résolu le 2026-10-30.
 - Open question: Nombre et contenu exact du catalogue (story 1) : à approuver
   par l'utilisateur avant implémentation.
+- Decision: 2026-10-30 — Suite de la story 2 : les acheteurs sont regroupés
+  par SIREN (option « tout l'organisme » parmi les choix, limite affichée
+  quand un seul établissement est retenu). Le même regroupement pour les
+  titulaires fait l'objet de la story 9, ajoutée à la demande de
+  l'utilisateur.
+- Open question: Story 9 : niveau par défaut des classements de titulaires
+  (établissement SIRET ou entreprise SIREN).

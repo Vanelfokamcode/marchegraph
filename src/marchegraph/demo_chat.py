@@ -76,7 +76,10 @@ def main() -> None:
                     "RETURN m.annee AS annee, count(*) AS marches ORDER BY annee",
                     source=DATASET_ID,
                 ).data()
-            st.table(counts) if counts else st.warning("Aucun marché trouvé.")
+            if counts:
+                st.table(counts)
+            else:
+                st.warning("Aucun marché trouvé.")
         except Exception as exc:  # démo : on affiche l'erreur telle quelle
             st.error(f"Connexion impossible : {exc}")
         st.subheader("Questions prises en charge")
